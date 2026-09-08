@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ENTSO-E 2025 — Dependency Dashboard</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>European electricity dependency</h1>
+    <p id="subtitle">Loading…</p>
+  </header>
+
+  <nav>
+    <button class="tab active" data-tab="map">Map</button>
+    <button class="tab" data-tab="prices">Prices</button>
+    <button class="tab" data-tab="seasonality">Seasonality</button>
+    <button class="tab" data-tab="te">Transfer entropy</button>
+    <button class="tab" data-tab="mismatch">Price vs flow</button>
+    <button class="tab" data-tab="regimes">TE regimes</button>
+    <button class="tab" data-tab="network">Network &amp; grid</button>
+    <button class="tab" data-tab="coverage">Data coverage</button>
+  </nav>
+
+  <main>
+    <section id="panel-map" class="panel active">
+      <div class="panel-intro">
+        <h2>Physical grid &amp; price coupling</h2>
+        <p>Lines connect <strong>bidding zones</strong> (not just countries). Color and width reflect connection strength — weak (pale) to strong (dark). <strong>All connections</strong> includes pairs below the graph threshold; <strong>Strongest only</strong> focuses on stronger links (price: |r| ≥ 0.80; TE: ≥ minimum on borders). Gradient re-scales per toggle.</p>
+      </div>
+      <div class="map-controls">
+        <label class="control-label" for="map-layer-select">Connection type</label>
+        <select id="map-layer-select">
+          <option value="flow">Physical flow (MW)</option>
+          <option value="price">Price coupling (Pearson r)</option>
+          <option value="te">Transfer entropy (bits)</option>
+        </select>
+        <div class="toggle-group" role="group" aria-label="Connection filter">
+          <button type="button" class="map-toggle active" data-mode="all">All connections</button>
+          <button type="button" class="map-toggle" data-mode="strongest">Strongest only (≥ threshold)</button>
+        </div>
+      </div>
+      <div id="map-strength-explain" class="strength-explain-host" aria-live="polite"></div>
+      <div id="map"></div>
+      <div class="map-gradient-legend" id="map-gradient-legend"></div>
+      <div class="legend">
+        <span class="legend-item"><i class="swatch node"></i> Bidding zone (ENTSO-E)</span>
+        <span class="legend-item" id="map-edge-count"></span>
+      </div>
+      <div class="stats" id="map-stats"></div>
+      <div id="sources-map" class="sources-host"></div>
+      <div id="glossary-map" class="glossary-host"></div>
+    </section>
+
+    <section id="panel-prices" class="panel">
+      <div class="panel-intro">
+        <h2>Day-ahead electricity prices</h2>
+        <p>Monthly average day-ahead price in EUR/MWh from ENTSO-E Transparency Platform. Compare how wholesale prices evolved across major bidding zones through 2025.</p>
+      </div>
+      <div id="prices-strength-explain" class="strength-explain-host"></div>
+      <div class="chart-wrap">
+        <canvas id="price-chart"></canvas>
+      </div>
+      <table id="price-summary-table">
+        <thead>
+          <tr>
+            <th>Zone</th>
+            <th>Annual mean (EUR/MWh)</th>
+            <th>Min hourly</th>
+            <th>Max hourly</th>
+            <th>Hours of data</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <div id="sources-prices" class="sources-host"></div>
+      <div id="glossary-prices" class="glossary-host"></div>
+    </section>
+
+    <section id="panel-seasonality" class="panel">
+      <div class="panel-intro">
+        <h2>Seasonal patterns in electricity prices</h2>
+        <p>Prices repeat at three time scales: <strong>within-day</strong> (morning/evening peaks), <strong>within-week</strong> (weekday vs weekend), and <strong>within-year</strong> (winter vs summer / quarterly levels). We remove these mean profiles step-by-step; the residual series is what we use for transfer entropy.</p>
+      </div>
+      <label class="control-label" for="hod-zone-select">Zone</label>
+      <select id="hod-zone-select"></select>
+      <div class="chart-grid">
+        <div>
+          <p class="chart-label">Intraday (hour-of-day, UTC)</p>
+          <div class="chart-wrap chart-wrap-sm">
+            <canvas id="hod-chart"></canvas>
+          </div>
+        </div>
+        <div>
+          <p class="chart-label">Quarterly average (calendar Q1–Q4)</p>
+          <div class="chart-wrap chart-wrap-sm">
+            <canvas id="quarter-chart"></canvas>
+          </div>
+        </div>
+      </div>
+      <p class="chart-label">Calendar-month average (seasonal level through the year)</p>
+      <div class="chart-wrap chart-wrap-sm">
+        <canvas id="month-season-chart"></canvas>
+      </div>
+      <p class="subheading">Zones with the strongest intraday pattern</p>
+      <p class="hint">HOD / DOW / MOY strength = fraction of remaining variance removed by each seasonal layer. Quarter spread = max(Q) − min(Q) in EUR/MWh.</p>
+      <table id="hod-table">
+        <thead>
+          <tr>
+            <th>Zone</th>
+            <th>HOD</th>
+            <th>DOW</th>
+            <th>MOY</th>
+            <th>Quarter spread</th>
+            <th>Residual σ</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <p class="subheading">Load seasonality (MW) — strongest quarterly patterns</p>
+      <table id="load-season-table">
+        <thead>
+          <tr>
+            <th>Zone</th>
+            <th>MOY strength</th>
+            <th>Quarter spread (MW)</th>
+            <th>Mean load</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <div id="sources-seasonality" class="sources-host"></div>
+      <div id="glossary-seasonality" class="glossary-host"></div>
+    </section>
+
+    <section id="panel-te" class="panel">
+      <div class="panel-intro">
+        <h2>Directed price information flow</h2>
+        <p>Transfer entropy (TE) measures directed price information flow: does zone A’s past help predict zone B’s <em>next</em> hour beyond B’s own history? Estimated with <strong>k-NN Rényi TE</strong> (Tabachová et al. 2026) on deseasonalised ENTSO-E prices — see <strong>Data source &amp; method</strong> below for k, α, r, l, and shuffle correction.</p>
+      </div>
+      <div id="te-strength-explain" class="strength-explain-host"></div>
+      <div class="stat-row" id="te-stats"></div>
+      <p class="subheading">Top cross-border pairs (neighbouring zones only)</p>
+      <table id="te-table">
+        <thead>
+          <tr>
+            <th>Source zone</th>
+            <th aria-hidden="true">→</th>
+            <th>Target zone</th>
+            <th>TE (bits)</th>
+            <th>Interpretation</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <div id="sources-te" class="sources-host"></div>
+      <div id="glossary-te" class="glossary-host"></div>
+    </section>
+
+    <section id="panel-mismatch" class="panel">
+      <div class="panel-intro">
+        <h2>Physical flow vs price coupling</h2>
+        <p>Every neighbouring border is classified by mean |MW| (physical flow) against Pearson r (price coupling) and transfer entropy. <strong>Congested trade</strong> is high physical exchange without the project’s price-coupling threshold (|r| ≥ 0.85) — France–Spain is the running example. Flow-high cut = median |MW|; TE-high = 0.02 bits.</p>
+      </div>
+      <div class="stat-row" id="mismatch-stats"></div>
+      <div id="fr-es-callout"></div>
+      <p class="subheading">High-flow / low-correlation borders</p>
+      <table id="mismatch-highlight-table">
+        <thead>
+          <tr>
+            <th>Border</th>
+            <th>Mean |MW|</th>
+            <th>Pearson r</th>
+            <th>TE max</th>
+            <th>Class</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <p class="subheading">All neighbouring borders</p>
+      <table id="mismatch-table">
+        <thead>
+          <tr>
+            <th>Border</th>
+            <th>Mean |MW|</th>
+            <th>Pearson r</th>
+            <th>TE max</th>
+            <th>Class</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <div id="sources-mismatch" class="sources-host"></div>
+      <div id="glossary-mismatch" class="glossary-host"></div>
+    </section>
+
+    <section id="panel-regimes" class="panel">
+      <div class="panel-intro">
+        <h2>TE reversals and nested time scales</h2>
+        <p>Directed TE is re-estimated on <strong>hour-of-day, weekday/weekend, meteorological season, and calendar month</strong> subsets of deseasonalised prices (border pairs). A <strong>reversal</strong> is a pair whose information-flow leader flips across bins. Nested Year → Month → Week → HOD TE is shown for a corridor set (default FR, ES, PT, DE_LU, AT, CH, IT_NORTH, NO_2). Discrete TE; HOD lag-1 is the previous day at the same hour.</p>
+      </div>
+      <div class="stat-row" id="regime-stats"></div>
+      <label class="control-label" for="regime-select">Regime</label>
+      <select id="regime-select">
+        <option value="hod">Hour of day</option>
+        <option value="dow">Weekday / weekend</option>
+        <option value="season">Season (DJF–SON)</option>
+        <option value="moy">Month of year</option>
+      </select>
+      <p class="subheading">Reversing pairs</p>
+      <table id="reversal-table">
+        <thead>
+          <tr>
+            <th>Pair</th>
+            <th>A leads in</th>
+            <th>B leads in</th>
+            <th>Bins used</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <p class="subheading">Nested TE vs yearly average</p>
+      <div class="chart-wrap chart-wrap-sm">
+        <canvas id="nested-te-chart"></canvas>
+      </div>
+      <table id="nested-te-table">
+        <thead>
+          <tr>
+            <th>Pair</th>
+            <th>Year A→B</th>
+            <th>Year B→A</th>
+            <th>Month avg A→B</th>
+            <th>Week avg A→B</th>
+            <th>HOD avg A→B</th>
+            <th>Leader year = month avg?</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <div id="sources-regimes" class="sources-host"></div>
+      <div id="glossary-regimes" class="glossary-host"></div>
+    </section>
+
+    <section id="panel-network" class="panel">
+      <div class="panel-intro">
+        <h2>Dependency structure and the physical grid</h2>
+        <p>Compare which bidding zones are hubs on <strong>price coupling</strong>, <strong>physical flow</strong>, and <strong>transfer entropy</strong>, versus OSM transmission geography and GEM plant capacity. Overlap of top hubs shows where energy and price information concentrate on the same nodes — or not.</p>
+      </div>
+      <div class="stat-row" id="network-stats"></div>
+      <p id="hub-overlap" class="hint"></p>
+      <div class="chart-grid">
+        <div>
+          <p class="chart-label">OSM substations by country</p>
+          <div class="chart-wrap chart-wrap-sm">
+            <canvas id="substation-chart"></canvas>
+          </div>
+        </div>
+        <div>
+          <p class="chart-label">GEM operating capacity by type (MW)</p>
+          <div class="chart-wrap chart-wrap-sm">
+            <canvas id="gem-type-chart"></canvas>
+          </div>
+        </div>
+      </div>
+      <p class="subheading">Top hubs by layer</p>
+      <div class="chart-grid">
+        <table id="hub-price-table">
+          <thead><tr><th colspan="3">Price coupling</th></tr><tr><th>Zone</th><th>Strength</th><th>Degree</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <table id="hub-flow-table">
+          <thead><tr><th colspan="3">Physical flow</th></tr><tr><th>Zone</th><th>Strength</th><th>Degree</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <table id="hub-te-table">
+        <thead><tr><th colspan="3">Transfer entropy</th></tr><tr><th>Zone</th><th>Strength</th><th>Degree</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <p class="subheading">Voltage mix (OSM AC lines)</p>
+      <table id="voltage-table">
+        <thead><tr><th>Voltage</th><th>Lines</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <div id="sources-network" class="sources-host"></div>
+      <div id="glossary-network" class="glossary-host"></div>
+    </section>
+
+    <section id="panel-coverage" class="panel">
+      <div class="panel-intro">
+        <h2>ENTSO-E data availability</h2>
+        <p>We target 45 bidding zones from <code>config/zones.yaml</code>. This tab tracks <strong>ENTSO-E</strong> time-series gaps only. Static reference data (PyPSA-Eur OSM grid, GEM plants) is collected separately — see <strong>Data source &amp; method</strong> below.</p>
+      </div>
+      <div class="stat-row" id="coverage-stats"></div>
+      <table id="gap-table">
+        <thead>
+          <tr>
+            <th>Dataset</th>
+            <th>Zones with full year</th>
+            <th>Missing zones</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <div id="sources-coverage" class="sources-host"></div>
+      <div id="glossary-coverage" class="glossary-host"></div>
+    </section>
+  </main>
+
+  <script src="data.js"></script>
+  <script src="glossary.js"></script>
+  <script src="sources.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

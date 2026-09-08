@@ -1,0 +1,47 @@
+# ENTSO-E dataset definitions for dependency mapping
+
+datasets:
+  day_ahead_prices:
+    description: Day-ahead market prices (EUR/MWh)
+    scope: zone
+    method: prices.day_ahead
+    entsoe_doc: A44
+
+  actual_load:
+    description: Actual total system load (MW)
+    scope: zone
+    method: load.actual
+    entsoe_doc: A65
+
+  generation_actual:
+    description: Actual generation by fuel type (MW)
+    scope: zone
+    method: generation.actual
+    entsoe_doc: A75
+
+  imbalance_prices:
+    description: System imbalance prices
+    scope: zone
+    method: balancing.imbalance_prices
+    entsoe_doc: A85
+
+  crossborder_flows:
+    description: Physical cross-border flows (MW)
+    scope: border_pair
+    method: transmission.crossborder_flows
+    entsoe_doc: A11
+    chunk: month
+
+  scheduled_exchanges:
+    description: Scheduled commercial exchanges (MW)
+    scope: border_pair
+    method: transmission.scheduled_exchanges
+    entsoe_doc: A09
+    chunk: month
+
+  net_transfer_capacity:
+    description: Day-ahead net transfer capacity (MW)
+    scope: border_pair
+    method: transmission.net_transfer_capacity
+    entsoe_doc: A61
+    chunk: month

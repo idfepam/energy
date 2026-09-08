@@ -1,0 +1,169 @@
+# ENTSO-E bidding zones for EU coupling region
+# ISO codes match python-entsoe area mappings
+
+zones:
+  - code: AT
+    name: Austria
+    neighbors: [DE_LU, CZ, SK, HU, SI, IT_NORTH, CH]
+  - code: BE
+    name: Belgium
+    neighbors: [NL, DE_LU, FR, GB]
+  - code: BG
+    name: Bulgaria
+    neighbors: [RO, GR, MK, RS, TR]
+  - code: HR
+    name: Croatia
+    neighbors: [SI, HU, RS, BA, ME]
+  - code: CZ
+    name: Czech Republic
+    neighbors: [DE_LU, PL, SK, AT]
+  - code: DK_1
+    name: Denmark West (DK1)
+    neighbors: [DE_LU, NL, SE_3, NO_2]
+  - code: DK_2
+    name: Denmark East (DK2)
+    neighbors: [SE_4, DE_LU]
+  - code: EE
+    name: Estonia
+    neighbors: [FI, LV, LT]
+  - code: FI
+    name: Finland
+    neighbors: [SE_1, SE_3, EE, NO_4]
+  - code: FR
+    name: France
+    neighbors: [BE, DE_LU, CH, IT_NORTH, ES, GB]
+  - code: DE_LU
+    name: Germany/Luxembourg
+    neighbors: [NL, BE, FR, CH, AT, CZ, PL, DK_1, DK_2, SE_4, NO_2]
+  - code: GR
+    name: Greece
+    neighbors: [BG, MK, AL, IT_SUD, TR]
+  - code: HU
+    name: Hungary
+    neighbors: [SK, AT, SI, HR, RS, RO, UA]
+  - code: IE_SEM
+    name: Ireland (SEM)
+    neighbors: [GB]
+  - code: IT_NORTH
+    name: Italy North
+    neighbors: [FR, CH, AT, SI, IT_CNOR]
+  - code: IT_CNOR
+    name: Italy Centre-North
+    neighbors: [IT_NORTH, IT_CSUD]
+  - code: IT_CSUD
+    name: Italy Centre-South
+    neighbors: [IT_CNOR, IT_SUD]
+  - code: IT_SUD
+    name: Italy South
+    neighbors: [IT_CSUD, IT_SICI, GR]
+  - code: IT_SICI
+    name: Italy Sicily
+    neighbors: [IT_SUD, IT_SARD]
+  - code: IT_SARD
+    name: Italy Sardinia
+    neighbors: [IT_SICI, IT_CSUD]
+  - code: LV
+    name: Latvia
+    neighbors: [EE, LT]
+  - code: LT
+    name: Lithuania
+    neighbors: [LV, EE, PL, SE_4]
+  - code: NL
+    name: Netherlands
+    neighbors: [BE, DE_LU, DK_1, GB, NO_2]
+  - code: NO_1
+    name: Norway NO1
+    neighbors: [SE_3, NO_2, NO_3, NO_5]
+  - code: NO_2
+    name: Norway NO2
+    neighbors: [NO_1, NO_5, SE_3, DK_1, NL, DE_LU]
+  - code: NO_3
+    name: Norway NO3
+    neighbors: [NO_1, NO_4, NO_5, SE_2]
+  - code: NO_4
+    name: Norway NO4
+    neighbors: [NO_3, SE_2, FI]
+  - code: NO_5
+    name: Norway NO5
+    neighbors: [NO_1, NO_2, NO_3]
+  - code: PL
+    name: Poland
+    neighbors: [DE_LU, CZ, SK, LT, SE_4, UA]
+  - code: PT
+    name: Portugal
+    neighbors: [ES]
+  - code: RO
+    name: Romania
+    neighbors: [HU, RS, BG, UA, MD]
+  - code: SK
+    name: Slovakia
+    neighbors: [CZ, PL, HU, AT, UA]
+  - code: SI
+    name: Slovenia
+    neighbors: [AT, IT_NORTH, HR, HU]
+  - code: ES
+    name: Spain
+    neighbors: [FR, PT]
+  - code: SE_1
+    name: Sweden SE1
+    neighbors: [SE_2, FI, NO_4]
+  - code: SE_2
+    name: Sweden SE2
+    neighbors: [SE_1, SE_3, NO_3, NO_4]
+  - code: SE_3
+    name: Sweden SE3
+    neighbors: [SE_2, SE_4, NO_1, NO_3, DK_1, FI]
+  - code: SE_4
+    name: Sweden SE4
+    neighbors: [SE_3, DK_2, LT, PL, DE_LU]
+  - code: CH
+    name: Switzerland
+    neighbors: [DE_LU, FR, AT, IT_NORTH]
+  - code: GB
+    name: Great Britain
+    neighbors: [FR, BE, NL, IE_SEM]
+  - code: RS
+    name: Serbia
+    neighbors: [HU, RO, BG, MK, ME, BA, HR]
+  - code: BA
+    name: Bosnia and Herzegovina
+    neighbors: [HR, RS, ME]
+  - code: ME
+    name: Montenegro
+    neighbors: [RS, BA, HR, AL]
+  - code: MK
+    name: North Macedonia
+    neighbors: [GR, BG, RS]
+  - code: AL
+    name: Albania
+    neighbors: [GR, ME, MK]
+
+# EU member states ISO2 for static data filtering
+eu_countries:
+  - AT
+  - BE
+  - BG
+  - HR
+  - CY
+  - CZ
+  - DK
+  - EE
+  - FI
+  - FR
+  - DE
+  - GR
+  - HU
+  - IE
+  - IT
+  - LV
+  - LT
+  - LU
+  - MT
+  - NL
+  - PL
+  - PT
+  - RO
+  - SK
+  - SI
+  - ES
+  - SE

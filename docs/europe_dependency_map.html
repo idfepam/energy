@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Europe electricity dependency map</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    html, body, #map { margin: 0; height: 100%; width: 100%; background: #eef1f4; }
+    .legend {
+      background: rgba(255,255,255,0.94);
+      color: #333;
+      padding: 10px 12px;
+      border-radius: 6px;
+      font: 11px/1.4 system-ui, sans-serif;
+      border: 1px solid #ccc;
+      box-shadow: none;
+    }
+    .legend h4 { margin: 0 0 6px; font-size: 11px; font-weight: 600; color: #111; }
+    .legend div { margin: 3px 0; display: flex; align-items: center; gap: 8px; }
+    .swatch-line { width: 22px; height: 0; border-top: 3px solid #5b9bd5; }
+    .swatch-dash { width: 22px; height: 0; border-top: 2px dashed #888; }
+    .swatch-dot { width: 10px; height: 10px; border-radius: 50%; background: #5b9bd5; opacity: 0.7; }
+    .leaflet-container { background: #eef1f4; font-family: system-ui, sans-serif; }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <script>
+    const DATA = {"countries":[{"iso":"AL","lat":41.4656,"lon":19.8755,"n":23},{"iso":"AT","lat":47.6353,"lon":14.0748,"n":113},{"iso":"BA","lat":43.9114,"lon":18.0663,"n":39},{"iso":"BE","lat":50.714,"lon":4.7285,"n":74},{"iso":"BG","lat":42.7367,"lon":24.5898,"n":153},{"iso":"CH","lat":46.8263,"lon":8.2628,"n":185},{"iso":"CZ","lat":49.939,"lon":14.9062,"n":67},{"iso":"DE","lat":51.1091,"lon":9.1179,"n":785},{"iso":"DK","lat":55.9355,"lon":10.4367,"n":56},{"iso":"EE","lat":59.0155,"lon":25.8918,"n":20},{"iso":"ES","lat":40.5894,"lon":-3.3353,"n":1078},{"iso":"FI","lat":63.0726,"lon":24.7641,"n":108},{"iso":"FR","lat":47.0731,"lon":3.1434,"n":1206},{"iso":"GB","lat":53.6357,"lon":-2.0887,"n":528},{"iso":"GR","lat":39.0442,"lon":22.9341,"n":41},{"iso":"HR","lat":44.7703,"lon":16.06,"n":26},{"iso":"HU","lat":47.4767,"lon":19.5401,"n":56},{"iso":"IE","lat":52.9937,"lon":-7.403,"n":57},{"iso":"IT","lat":43.4964,"lon":11.5661,"n":596},{"iso":"LT","lat":55.3566,"lon":23.2909,"n":28},{"iso":"LU","lat":49.6431,"lon":6.0573,"n":16},{"iso":"LV","lat":56.7955,"lon":24.3218,"n":24},{"iso":"MD","lat":46.9476,"lon":28.9559,"n":8},{"iso":"ME","lat":42.7939,"lon":19.0812,"n":12},{"iso":"MK","lat":41.727,"lon":21.5768,"n":7},{"iso":"NL","lat":52.4454,"lon":5.2343,"n":63},{"iso":"NO","lat":61.4992,"lon":9.0316,"n":293},{"iso":"PL","lat":51.5678,"lon":19.3703,"n":247},{"iso":"PT","lat":40.0637,"lon":-8.2145,"n":153},{"iso":"RO","lat":45.4424,"lon":24.8803,"n":169},{"iso":"RS","lat":44.5558,"lon":20.5071,"n":51},{"iso":"SE","lat":60.8484,"lon":16.209,"n":221},{"iso":"SI","lat":46.2066,"lon":14.9976,"n":17},{"iso":"SK","lat":48.6322,"lon":19.1859,"n":47},{"iso":"UA","lat":48.36,"lon":32.6305,"n":286},{"iso":"XK","lat":42.6269,"lon":21.0555,"n":10}],"flow_lines":[{"from":"FR","to":"BE","mw":1598,"lat1":47.0731,"lon1":3.1434,"lat2":50.714,"lon2":4.7285},{"from":"FR","to":"CH","mw":1598,"lat1":47.0731,"lon1":3.1434,"lat2":46.8263,"lon2":8.2628},{"from":"FR","to":"DE_LU","mw":1598,"lat1":47.0731,"lon1":3.1434,"lat2":51.1091,"lon2":9.1179},{"from":"FR","to":"ES","mw":1598,"lat1":47.0731,"lon1":3.1434,"lat2":40.5894,"lon2":-3.3353},{"from":"DE_LU","to":"AT","mw":1441,"lat1":51.1091,"lon1":9.1179,"lat2":47.6353,"lon2":14.0748},{"from":"DE_LU","to":"BE","mw":1441,"lat1":51.1091,"lon1":9.1179,"lat2":50.714,"lon2":4.7285},{"from":"DE_LU","to":"CH","mw":1441,"lat1":51.1091,"lon1":9.1179,"lat2":46.8263,"lon2":8.2628},{"from":"DE_LU","to":"CZ","mw":1441,"lat1":51.1091,"lon1":9.1179,"lat2":49.939,"lon2":14.9062},{"from":"NL","to":"BE","mw":1266,"lat1":52.4454,"lon1":5.2343,"lat2":50.714,"lon2":4.7285},{"from":"NL","to":"DE_LU","mw":1266,"lat1":52.4454,"lon1":5.2343,"lat2":51.1091,"lon2":9.1179},{"from":"NL","to":"DK_1","mw":1266,"lat1":52.4454,"lon1":5.2343,"lat2":55.9355,"lon2":10.4367},{"from":"NL","to":"GB","mw":1266,"lat1":52.4454,"lon1":5.2343,"lat2":53.6357,"lon2":-2.0887}],"price_lines":[{"from":"LT","to":"LV","r":0.998,"lat1":55.3566,"lon1":23.2909,"lat2":56.7955,"lon2":24.3218},{"from":"BG","to":"RO","r":0.993,"lat1":42.7367,"lon1":24.5898,"lat2":45.4424,"lon2":24.8803},{"from":"HR","to":"SI","r":0.992,"lat1":44.7703,"lon1":16.06,"lat2":46.2066,"lon2":14.9976},{"from":"ES","to":"PT","r":0.978,"lat1":40.5894,"lon1":-3.3353,"lat2":40.0637,"lon2":-8.2145},{"from":"HR","to":"HU","r":0.971,"lat1":44.7703,"lon1":16.06,"lat2":47.4767,"lon2":19.5401},{"from":"BE","to":"NL","r":0.954,"lat1":50.714,"lon1":4.7285,"lat2":52.4454,"lon2":5.2343},{"from":"HU","to":"RO","r":0.954,"lat1":47.4767,"lon1":19.5401,"lat2":45.4424,"lon2":24.8803},{"from":"HR","to":"RO","r":0.952,"lat1":44.7703,"lon1":16.06,"lat2":45.4424,"lon2":24.8803},{"from":"BG","to":"HU","r":0.947,"lat1":42.7367,"lon1":24.5898,"lat2":47.4767,"lon2":19.5401},{"from":"HU","to":"SI","r":0.946,"lat1":47.4767,"lon1":19.5401,"lat2":46.2066,"lon2":14.9976},{"from":"MK","to":"RS","r":0.945,"lat1":41.727,"lon1":21.5768,"lat2":44.5558,"lon2":20.5071},{"from":"BG","to":"HR","r":0.944,"lat1":42.7367,"lon1":24.5898,"lat2":44.7703,"lon2":16.06},{"from":"CZ","to":"SK","r":0.932,"lat1":49.939,"lon1":14.9062,"lat2":48.6322,"lon2":19.1859},{"from":"EE","to":"LV","r":0.927,"lat1":59.0155,"lon1":25.8918,"lat2":56.7955,"lon2":24.3218},{"from":"EE","to":"LT","r":0.925,"lat1":59.0155,"lon1":25.8918,"lat2":55.3566,"lon2":23.2909},{"from":"RO","to":"RS","r":0.922,"lat1":45.4424,"lon1":24.8803,"lat2":44.5558,"lon2":20.5071},{"from":"BG","to":"GR","r":0.921,"lat1":42.7367,"lon1":24.5898,"lat2":39.0442,"lon2":22.9341}]};
+
+    const map = L.map('map', { zoomControl: true, attributionControl: true }).setView([54, 15], 4);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+      maxZoom: 20,
+      subdomains: 'abcd',
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+    }).addTo(map);
+
+    const maxN = Math.max(...DATA.countries.map(c => c.n));
+    const maxMw = Math.max(...DATA.flow_lines.map(f => f.mw));
+
+    DATA.price_lines.forEach(e => {
+      L.polyline([[e.lat1, e.lon1], [e.lat2, e.lon2]], {
+        color: '#888',
+        weight: 1 + (e.r - 0.92) * 6,
+        opacity: 0.45 + (e.r - 0.92) * 1.5,
+        dashArray: '6 5',
+      }).bindTooltip(`${e.from} – ${e.to}: r=${e.r}`, { sticky: true }).addTo(map);
+    });
+
+    DATA.flow_lines.forEach(e => {
+      const w = 2 + (e.mw / maxMw) * 6;
+      const line = L.polyline([[e.lat1, e.lon1], [e.lat2, e.lon2]], {
+        color: '#5b9bd5',
+        weight: w,
+        opacity: 0.65,
+      }).bindTooltip(`${e.from} → ${e.to}: ${e.mw.toLocaleString()} MW (mean hourly)`, { sticky: true });
+      line.addTo(map);
+      const mid = L.latLng((e.lat1 + e.lat2) / 2, (e.lon1 + e.lon2) / 2);
+      L.marker(mid, {
+        icon: L.divIcon({
+          className: '',
+          html: '<div style="color:#5b9bd5;font-size:14px;font-weight:700;text-shadow:0 0 3px #000">›</div>',
+          iconSize: [12, 12],
+          iconAnchor: [4, 8],
+        }),
+        interactive: false,
+      }).addTo(map);
+    });
+
+    DATA.countries.forEach(c => {
+      const r = 4 + (c.n / maxN) * 14;
+      L.circleMarker([c.lat, c.lon], {
+        radius: r,
+        color: '#5b9bd5',
+        weight: 1.2,
+        fillColor: '#5b9bd5',
+        fillOpacity: 0.35,
+      }).bindTooltip(`${c.iso}: ${c.n} OSM substations`, { sticky: true }).addTo(map);
+      L.marker([c.lat, c.lon], {
+        icon: L.divIcon({
+          className: '',
+          html: `<div style="transform:translate(-50%,-130%);font:600 10px system-ui;color:#222;text-shadow:0 0 3px #fff">${c.iso}</div>`,
+          iconSize: [0, 0],
+        }),
+        interactive: false,
+      }).addTo(map);
+    });
+
+    const legend = L.control({ position: 'topleft' });
+    legend.onAdd = () => {
+      const div = L.DomUtil.create('div', 'legend');
+      div.innerHTML = `
+        <h4>ENTSO-E 2025 · Carto basemap</h4>
+        <div><span class="swatch-line"></span> Physical flow (top borders, MW)</div>
+        <div><span class="swatch-dash"></span> Price coupling (r ≥ 0.92)</div>
+        <div><span class="swatch-dot"></span> Substation density (PyPSA-Eur OSM)</div>`;
+      return div;
+    };
+    legend.addTo(map);
+
+    map.fitBounds(L.latLngBounds(DATA.countries.map(c => [c.lat, c.lon])).pad(0.08));
+  </script>
+</body>
+</html>

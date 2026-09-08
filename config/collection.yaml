@@ -1,0 +1,15 @@
+default_year: 2025
+
+rate_limit:
+  requests_per_minute: 350
+  retry_max_attempts: 5
+  retry_base_delay_seconds: 2
+  cooldown_on_429_seconds: 600
+
+storage:
+  data_root: data
+  save_raw_xml: false
+
+collection:
+  zone_chunk: year
+  border_pair_chunk: month
