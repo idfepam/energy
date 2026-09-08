@@ -4,6 +4,8 @@ Collection framework for ENTSO-E transparency data and upstream static infrastru
 
 **Live dashboard (GitHub Pages):** [https://idfepam.github.io/energy/](https://idfepam.github.io/energy/)
 
+If that link 404s, enable Pages once: repo **Settings → Pages → Source: GitHub Actions** (workflow `.github/workflows/pages.yml`). Alternative: **Deploy from branch `main`, folder `/docs`**, then use [https://idfepam.github.io/energy/dashboard/](https://idfepam.github.io/energy/dashboard/).
+
 **Supervisor:** Stefan
 
 ## Setup
