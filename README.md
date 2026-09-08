@@ -2,9 +2,9 @@
 
 Collection framework for ENTSO-E transparency data and upstream static infrastructure sources (Global Energy Monitor, OpenStreetMap/PyPSA-Eur).
 
-**Live dashboard (GitHub Pages):** [https://idfepam.github.io/energy/](https://idfepam.github.io/energy/)
+**Live dashboard:** [https://idfepam.github.io/energy/](https://idfepam.github.io/energy/)
 
-If that link 404s, enable Pages once: repo **Settings → Pages → Source: GitHub Actions** (workflow `.github/workflows/pages.yml`). Alternative: **Deploy from branch `main`, folder `/docs`**, then use [https://idfepam.github.io/energy/dashboard/](https://idfepam.github.io/energy/dashboard/).
+The GitHub **repository** page shows this README. The **Pages site** is the interactive dashboard (map, prices, TE, mismatch, network).
 
 **Supervisor:** Stefan
 
