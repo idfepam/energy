@@ -164,9 +164,14 @@
     <section id="panel-mismatch" class="panel">
       <div class="panel-intro">
         <h2>Physical flow vs price coupling</h2>
-        <p>Every neighbouring border is classified by mean |MW| (physical flow) against Pearson r (price coupling) and transfer entropy. <strong>Congested trade</strong> is high physical exchange without the project’s price-coupling threshold (|r| ≥ 0.85) — France–Spain is the running example. Flow-high cut = median |MW|; TE-high = 0.02 bits.</p>
+        <p>Every neighbouring border is classified by mean |MW| (physical flow) against Pearson r (price coupling) and transfer entropy. The point is not the table alone: <strong>wires and prices can disagree</strong>, and each class has a market-design reason.</p>
       </div>
       <div class="stat-row" id="mismatch-stats"></div>
+      <div class="explain-grid" id="mismatch-explain"></div>
+      <p class="chart-label">Mean |physical flow| vs price correlation (each point is a neighbouring border)</p>
+      <div class="chart-wrap">
+        <canvas id="mismatch-scatter"></canvas>
+      </div>
       <div id="fr-es-callout"></div>
       <p class="subheading">High-flow / low-correlation borders</p>
       <table id="mismatch-highlight-table">
@@ -201,16 +206,39 @@
     <section id="panel-regimes" class="panel">
       <div class="panel-intro">
         <h2>TE reversals and nested time scales</h2>
-        <p>Directed TE is re-estimated on <strong>hour-of-day, weekday/weekend, meteorological season, and calendar month</strong> subsets of deseasonalised prices (border pairs). A <strong>reversal</strong> is a pair whose information-flow leader flips across bins. Nested Year → Month → Week → HOD TE is shown for a corridor set (default FR, ES, PT, DE_LU, AT, CH, IT_NORTH, NO_2). Discrete TE; HOD lag-1 is the previous day at the same hour.</p>
+        <p>Directed TE is re-estimated on hour-of-day, weekday/weekend, season, and month. Line charts compare <strong>A→B vs B→A</strong> and <strong>net TE across pairs</strong>. Nested Year → Month → Week → HOD shows what a yearly average conceals.</p>
       </div>
       <div class="stat-row" id="regime-stats"></div>
-      <label class="control-label" for="regime-select">Regime</label>
-      <select id="regime-select">
-        <option value="hod">Hour of day</option>
-        <option value="dow">Weekday / weekend</option>
-        <option value="season">Season (DJF–SON)</option>
-        <option value="moy">Month of year</option>
-      </select>
+      <div class="explain-grid" id="regime-explain"></div>
+      <div class="map-controls">
+        <div>
+          <label class="control-label" for="regime-select">Regime</label>
+          <select id="regime-select">
+            <option value="hod">Hour of day</option>
+            <option value="dow">Weekday / weekend</option>
+            <option value="season">Season (DJF–SON)</option>
+            <option value="moy">Month of year</option>
+          </select>
+        </div>
+        <div>
+          <label class="control-label" for="regime-pair-select">Pair (A→B vs B→A)</label>
+          <select id="regime-pair-select"></select>
+        </div>
+      </div>
+      <div class="chart-grid">
+        <div>
+          <p class="chart-label">Both directions on the selected pair</p>
+          <div class="chart-wrap chart-wrap-sm">
+            <canvas id="te-pair-line-chart"></canvas>
+          </div>
+        </div>
+        <div>
+          <p class="chart-label">Net TE (A minus B) — compare reversing pairs</p>
+          <div class="chart-wrap chart-wrap-sm">
+            <canvas id="te-net-line-chart"></canvas>
+          </div>
+        </div>
+      </div>
       <p class="subheading">Reversing pairs</p>
       <table id="reversal-table">
         <thead>
@@ -224,8 +252,13 @@
         <tbody></tbody>
       </table>
       <p class="subheading">Nested TE vs yearly average</p>
-      <div class="chart-wrap chart-wrap-sm">
+      <p class="hint">X-axis is the time scale, not geography. Each line is one corridor pair (A→B). Week/HOD averages are larger because windows are shorter — read the shape and whether the leader survives averaging.</p>
+      <div class="chart-wrap">
         <canvas id="nested-te-chart"></canvas>
+      </div>
+      <p class="chart-label">Hour-of-day net TE on the nested corridor (positive = A leads B)</p>
+      <div class="chart-wrap chart-wrap-sm">
+        <canvas id="nested-hod-line-chart"></canvas>
       </div>
       <table id="nested-te-table">
         <thead>

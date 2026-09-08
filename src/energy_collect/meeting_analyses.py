@@ -696,6 +696,157 @@ def run_meeting_analyses(
     return report
 
 
+def refresh_meeting_dashboard(config: AppConfig, year: int) -> dict[str, Any]:
+    """Rebuild the slim dashboard JSON from a saved full meeting_analyses file."""
+    full_path = config.data_root / "manifests" / f"meeting_analyses_{year}.json"
+    report = json.loads(full_path.read_text(encoding="utf-8"))
+    slim = _dashboard_slim(report)
+    slim_path = config.data_root / "manifests" / "dashboard" / f"meeting_analyses_{year}.json"
+    slim_path.parent.mkdir(parents=True, exist_ok=True)
+    slim_path.write_text(json.dumps(slim, indent=2), encoding="utf-8")
+    return slim
+
+
+def _find_border(rows: list[dict[str, Any]], a: str, b: str) -> dict[str, Any] | None:
+    want = {a, b}
+    for r in rows:
+        if {r["a"], r["b"]} == want:
+            return r
+    return None
+
+
+def _fmt_r(row: dict[str, Any] | None) -> str:
+    if not row or row.get("pearson_r") is None:
+        return "—"
+    return f"{float(row['pearson_r']):.2f}"
+
+
+def _fmt_mw(row: dict[str, Any] | None) -> str:
+    if not row:
+        return "—"
+    return f"{float(row['mean_abs_mw']):,.0f}"
+
+
+def _build_interpretations(report: dict[str, Any]) -> dict[str, Any]:
+    mismatch = report["price_flow_mismatch"]
+    rows = mismatch.get("borders", [])
+    counts = mismatch.get("counts", {})
+    fr_es = mismatch.get("fr_es") or _find_border(rows, "FR", "ES")
+    es_pt = _find_border(rows, "ES", "PT")
+    lt_lv = _find_border(rows, "LT", "LV")
+    be_nl = _find_border(rows, "BE", "NL")
+    nested = report["nested_te"]
+    season_revs = report["te_regimes"].get("season", {}).get("reversals", [])
+    season_names = ", ".join(f"{r['a']}–{r['b']}" for r in season_revs[:4]) or "none above the net-TE cutoff"
+
+    n = mismatch.get("n_borders", len(rows))
+    ct = counts.get("congested_trade", 0)
+    pc = counts.get("paper_coupling", 0)
+    al = counts.get("aligned_strong", 0)
+
+    why_mismatch = (
+        "Physical MW and wholesale prices answer different questions. Cross-border flow is the energy that "
+        "actually moved on the wires (Kirchhoff’s laws, loop flows, and whatever capacity TSOs made available). "
+        "Day-ahead Pearson r asks whether the two bidding zones cleared at similar prices every hour. "
+        "Those coincide only when the interconnector (or the flow-based domain) is rarely binding. "
+        "When the cable is full, power still flows at a high MW rate, but extra cheap generation cannot enter "
+        "the expensive zone — so prices decouple. That is congested trade, not a data error."
+    )
+    why_fr_es = (
+        f"France–Spain in 2025: about {_fmt_mw(fr_es)} MW mean |flow| but Pearson r = {_fmt_r(fr_es)} "
+        f"(below the 0.85 coupling threshold used for the price graph). The Pyrenees link is a known NTC "
+        "bottleneck (ACER still flags FR–ES). Contrast Spain–Portugal on the same Iberian market: "
+        f"{_fmt_mw(es_pt)} MW and r = {_fmt_r(es_pt)} — aligned strong. So high flow is not enough for "
+        "price integration; the market has to still have spare capacity in the needed direction. "
+        "Caveat: ENTSO-E A11 often repeats the same French export total on several FR borders, so FR MW "
+        "magnitudes should be read as ‘large’, not as independent meters."
+    )
+    why_paper = (
+        f"{pc} of {n} borders are paper coupling: prices move together while bilateral MW is modest "
+        f"(example Lithuania–Latvia, r = {_fmt_r(lt_lv)}, ~{_fmt_mw(lt_lv)} MW). In a coupled market, "
+        "a zone pair can share a price because both trade with the same neighbours (Core flow-based, "
+        "Baltics, internal Sweden), not because that exact border carries the energy. Pearson r is an "
+        "integration statistic; MW is a path statistic."
+    )
+    why_aligned = (
+        f"{al} borders are aligned strong — both a large physical corridor and r ≥ 0.85 "
+        f"(examples: ES–PT r = {_fmt_r(es_pt)}; BE–NL r = {_fmt_r(be_nl)}). These are the cases where "
+        "the commercial market and the wires are telling the same story."
+    )
+    why_te_regimes = (
+        "A year-average TE arrow is a mixture of many operating regimes. Solar hours, evening peaks, "
+        "and hydro seasons do not share a leader. Nested windows (year → month → week → hour) inflate "
+        "raw TE as the sample gets shorter and more homogeneous; compare shapes and leader flips, not "
+        "absolute bits across scales. Discrete TE on hour-of-day uses lag-1 = yesterday at the same hour."
+    )
+    why_season = (
+        f"Season is the cleanest reversal signal ({len(season_revs)} pairs, including {season_names}). "
+        "South-east Europe often switches with winter heating versus autumn hydro/thermal mixes "
+        "(e.g. Bulgaria leading Serbia in DJF/MAM, Serbia leading in SON). Weekday vs weekend showed "
+        "no leader flips at the 0.03-bit cutoff — the workweek changes level more than direction."
+    )
+    why_nested = (
+        f"On the corridor set {', '.join(nested.get('zones', []))}, "
+        f"{nested.get('leader_agreement_year_vs_month_avg')} of {nested.get('pair_count')} pairs keep "
+        "the same yearly leader after averaging monthly TE. Where they disagree, a year graph is hiding "
+        "a seasonal or hourly reverse. Week-average TE is larger because each week is a short, bursty sample."
+    )
+    return {
+        "mismatch_mechanism": why_mismatch,
+        "fr_es": why_fr_es,
+        "paper_coupling": why_paper,
+        "aligned": why_aligned,
+        "te_regimes": why_te_regimes,
+        "te_season": why_season,
+        "te_nested": why_nested,
+        "counts_sentence": (
+            f"Of {n} neighbouring borders: {ct} congested trade, {pc} paper coupling, "
+            f"{al} aligned strong, {counts.get('informational', 0)} informational-only."
+        ),
+    }
+
+
+def _series_from_bins(
+    example: dict[str, Any],
+    labels: list[str],
+) -> dict[str, Any]:
+    ab, ba, net = [], [], []
+    for lab in labels:
+        row = (example.get("bins") or {}).get(lab) or {}
+        ab.append(row.get("te_a_to_b"))
+        ba.append(row.get("te_b_to_a"))
+        net.append(row.get("net_a_minus_b"))
+    return {
+        "a": example.get("a"),
+        "b": example.get("b"),
+        "pair": example.get("pair") or f"{example.get('a')}|{example.get('b')}",
+        "te_a_to_b": ab,
+        "te_b_to_a": ba,
+        "net": net,
+    }
+
+
+def _regime_line_charts(regimes: dict[str, Any]) -> dict[str, Any]:
+    hod_labels = [f"{h:02d}" for h in range(24)]
+    season_labels = ["DJF", "MAM", "JJA", "SON"]
+    moy_labels = [f"{m:02d}" for m in range(1, 13)]
+    dow_labels = ["weekday", "weekend"]
+    spec = {
+        "hod": hod_labels,
+        "season": season_labels,
+        "moy": moy_labels,
+        "dow": dow_labels,
+    }
+    out: dict[str, Any] = {}
+    for regime, labels in spec.items():
+        examples = (regimes.get(regime) or {}).get("examples") or []
+        out[regime] = {
+            "labels": labels,
+            "series": [_series_from_bins(ex, labels) for ex in examples[:6]],
+        }
+    return out
+
+
 def _dashboard_slim(report: dict[str, Any]) -> dict[str, Any]:
     mismatch = report["price_flow_mismatch"]
     regimes = report["te_regimes"]
@@ -747,4 +898,17 @@ def _dashboard_slim(report: dict[str, Any]) -> dict[str, Any]:
             "gem_operating_capacity_by_type": grid["gem_operating_capacity_by_type"],
             "zones_by_substations": grid["zones_by_substations"][:12],
         },
+        "interpretations": _build_interpretations(report),
+        "regime_charts": _regime_line_charts(regimes),
+        "mismatch_scatter": [
+            {
+                "a": r["a"],
+                "b": r["b"],
+                "x": r.get("pearson_r"),
+                "y": r.get("mean_abs_mw"),
+                "class": r["class"],
+            }
+            for r in mismatch.get("borders", [])
+            if r.get("pearson_r") is not None
+        ],
     }

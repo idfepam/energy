@@ -6,7 +6,7 @@
     return;
   }
 
-  const charts = { price: null, hod: null, quarter: null, monthSeason: null, nestedTe: null, substations: null, gemType: null };
+  const charts = { price: null, hod: null, quarter: null, monthSeason: null, nestedTe: null, nestedHod: null, substations: null, gemType: null, mismatchScatter: null, tePair: null, teNet: null };
   const G = window.DASHBOARD_GLOSSARY || {};
   const S = window.DASHBOARD_SOURCES || {};
   const Z = D.zone_names || {};
@@ -75,7 +75,12 @@
       }
       if (tab === 'prices') renderPriceChart();
       if (tab === 'seasonality') renderSeasonalityCharts();
-      if (tab === 'regimes') renderNestedTeChart();
+      if (tab === 'regimes') {
+        renderNestedTeChart();
+        renderNestedHodChart();
+        renderRegimeLineCharts();
+      }
+      if (tab === 'mismatch') renderMismatchScatter();
       if (tab === 'network') renderNetworkCharts();
     });
   });
@@ -574,6 +579,95 @@
   fillMismatchTable('#mismatch-highlight-table', mm.highlights || []);
   fillMismatchTable('#mismatch-table', mm.borders || []);
 
+  const interp = M.interpretations || {};
+  const mismatchExplain = document.getElementById('mismatch-explain');
+  if (mismatchExplain) {
+    mismatchExplain.innerHTML =
+      explainCard('Why MW and prices are not the same thing', interp.mismatch_mechanism) +
+      explainCard('France–Spain vs Spain–Portugal', interp.fr_es) +
+      explainCard('Paper coupling', interp.paper_coupling) +
+      explainCard('When both layers agree', interp.aligned);
+  }
+
+  function explainCard(title, body) {
+    if (!body) return '';
+    return '<article class="explain-card"><h3>' + title + '</h3><p>' + body + '</p></article>';
+  }
+
+  const SCATTER_COLORS = {
+    congested_trade: '#c2410c',
+    paper_coupling: '#2563a8',
+    aligned_strong: '#15803d',
+    informational: '#7c3aed',
+    weak: '#64748b',
+  };
+  const SCATTER_LABELS = {
+    congested_trade: 'Congested trade',
+    paper_coupling: 'Paper coupling',
+    aligned_strong: 'Aligned strong',
+    informational: 'Informational',
+    weak: 'Weak',
+  };
+
+  function renderMismatchScatter() {
+    const canvas = document.getElementById('mismatch-scatter');
+    if (!canvas) return;
+    const points = M.mismatch_scatter || mm.borders || [];
+    const byClass = {};
+    points.forEach((p) => {
+      const cls = p.class || 'weak';
+      if (!byClass[cls]) byClass[cls] = [];
+      const x = p.x != null ? p.x : p.pearson_r;
+      const y = p.y != null ? p.y : p.mean_abs_mw;
+      if (x == null || y == null) return;
+      byClass[cls].push({ x, y, a: p.a, b: p.b });
+    });
+    const datasets = Object.keys(byClass).map((cls) => ({
+      label: SCATTER_LABELS[cls] || cls,
+      data: byClass[cls],
+      backgroundColor: SCATTER_COLORS[cls] || '#64748b',
+      borderColor: SCATTER_COLORS[cls] || '#64748b',
+    }));
+    const options = {
+      ...chartDefaults,
+      plugins: {
+        ...chartDefaults.plugins,
+        tooltip: {
+          callbacks: {
+            label: (ctx) => {
+              const d = ctx.raw;
+              return `${d.a}–${d.b}: r=${Number(d.x).toFixed(3)}, |MW|=${Math.round(d.y)}`;
+            },
+          },
+        },
+        title: {
+          display: true,
+          text: 'High and to the right = coupled and heavily used; high and left = congested trade',
+          font: { size: 12, weight: '600' },
+        },
+      },
+      scales: {
+        x: {
+          title: { display: true, text: 'Pearson r (hourly day-ahead prices)', font: { size: 11 } },
+          min: 0,
+          max: 1,
+          grid: { color: '#eef2f6' },
+        },
+        y: {
+          title: { display: true, text: 'Mean |physical flow| (MW)', font: { size: 11 } },
+          grid: { color: '#eef2f6' },
+        },
+      },
+    };
+    if (charts.mismatchScatter) {
+      charts.mismatchScatter.data.datasets = datasets;
+      charts.mismatchScatter.update();
+      charts.mismatchScatter.resize();
+      return;
+    }
+    charts.mismatchScatter = new Chart(canvas, { type: 'scatter', data: { datasets }, options });
+  }
+
   // --- TE regimes ---
   const regimes = M.te_regimes || {};
   const nested = M.nested_te || {};
@@ -586,9 +680,129 @@
       `<div class="stat-card"><div class="value">${nested.weeks_used || 0}</div><div class="label">ISO weeks used</div></div>`;
   }
 
-  function renderReversalTable() {
+  const regimeExplain = document.getElementById('regime-explain');
+  if (regimeExplain) {
+    regimeExplain.innerHTML =
+      explainCard('Why a yearly TE arrow is not enough', interp.te_regimes) +
+      explainCard('Season reversals (clearest signal)', interp.te_season) +
+      explainCard('Nested averages vs the year graph', interp.te_nested);
+  }
+
+  const regimeCharts = M.regime_charts || {};
+  const LINE_PALETTE = ['#2563a8', '#dc2626', '#16a34a', '#9333ea', '#ea580c', '#0891b2'];
+
+  function currentRegimeKey() {
     const sel = document.getElementById('regime-select');
-    const key = sel ? sel.value : 'hod';
+    return sel ? sel.value : 'hod';
+  }
+
+  function fillRegimePairSelect() {
+    const sel = document.getElementById('regime-pair-select');
+    if (!sel) return;
+    const pack = regimeCharts[currentRegimeKey()] || { series: [] };
+    const prev = sel.value;
+    sel.innerHTML = '';
+    (pack.series || []).forEach((s, i) => {
+      const opt = document.createElement('option');
+      opt.value = String(i);
+      opt.textContent = (s.a || '') + ' – ' + (s.b || '');
+      sel.appendChild(opt);
+    });
+    if (prev && [...sel.options].some((o) => o.value === prev)) sel.value = prev;
+  }
+
+  function lineOpts(title, yText) {
+    return {
+      ...chartDefaults,
+      plugins: {
+        ...chartDefaults.plugins,
+        title: { display: true, text: title, font: { size: 12, weight: '600' } },
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { maxRotation: 45, font: { size: 10 } } },
+        y: {
+          title: { display: true, text: yText, font: { size: 11 } },
+          grid: { color: '#eef2f6' },
+        },
+      },
+    };
+  }
+
+  function upsertLineChart(key, canvas, labels, datasets, title, yText) {
+    if (!canvas) return;
+    if (charts[key]) {
+      charts[key].data.labels = labels;
+      charts[key].data.datasets = datasets;
+      charts[key].options.plugins.title.text = title;
+      charts[key].update();
+      charts[key].resize();
+      return;
+    }
+    charts[key] = new Chart(canvas, {
+      type: 'line',
+      data: { labels, datasets },
+      options: lineOpts(title, yText),
+    });
+  }
+
+  function renderRegimeLineCharts() {
+    fillRegimePairSelect();
+    const pack = regimeCharts[currentRegimeKey()] || { labels: [], series: [] };
+    const labels = pack.labels || [];
+    const series = pack.series || [];
+    const pairSel = document.getElementById('regime-pair-select');
+    const idx = pairSel ? parseInt(pairSel.value || '0', 10) : 0;
+    const one = series[idx] || series[0];
+    if (one) {
+      upsertLineChart(
+        'tePair',
+        document.getElementById('te-pair-line-chart'),
+        labels,
+        [
+          {
+            label: one.a + ' → ' + one.b,
+            data: one.te_a_to_b,
+            borderColor: '#2563a8',
+            backgroundColor: '#2563a822',
+            tension: 0.25,
+            spanGaps: true,
+            pointRadius: 2,
+          },
+          {
+            label: one.b + ' → ' + one.a,
+            data: one.te_b_to_a,
+            borderColor: '#dc2626',
+            backgroundColor: '#dc262622',
+            tension: 0.25,
+            spanGaps: true,
+            pointRadius: 2,
+          },
+        ],
+        'Transfer entropy both ways — ' + one.a + '–' + one.b,
+        'TE (bits)'
+      );
+    }
+    const netSets = series.slice(0, 6).map((s, i) => ({
+      label: s.a + '–' + s.b + ' net',
+      data: s.net,
+      borderColor: LINE_PALETTE[i % LINE_PALETTE.length],
+      tension: 0.25,
+      spanGaps: true,
+      pointRadius: 2,
+      fill: false,
+    }));
+    upsertLineChart(
+      'teNet',
+      document.getElementById('te-net-line-chart'),
+      labels,
+      netSets,
+      'Net TE (positive = first zone leads)',
+      'Net TE (bits)'
+    );
+  }
+
+  function renderReversalTable() {
+    const key = currentRegimeKey();
     const payload = regimes[key] || {};
     const body = document.querySelector('#reversal-table tbody');
     if (!body) return;
@@ -610,8 +824,15 @@
   }
   const regimeSelect = document.getElementById('regime-select');
   if (regimeSelect) {
-    regimeSelect.addEventListener('change', renderReversalTable);
+    regimeSelect.addEventListener('change', () => {
+      renderReversalTable();
+      renderRegimeLineCharts();
+    });
     renderReversalTable();
+  }
+  const regimePairSelect = document.getElementById('regime-pair-select');
+  if (regimePairSelect) {
+    regimePairSelect.addEventListener('change', renderRegimeLineCharts);
   }
 
   const nestedBody = document.querySelector('#nested-te-table tbody');
@@ -639,44 +860,49 @@
   function renderNestedTeChart() {
     const canvas = document.getElementById('nested-te-chart');
     if (!canvas) return;
-    const scale = (nested.scale_table || []).slice(0, 8);
-    const labels = scale.map((r) => r.a + '–' + r.b);
-    const yearData = scale.map((r) => r.year_a_to_b);
-    const monthData = scale.map((r) => r.month_avg_a_to_b);
-    const weekData = scale.map((r) => r.week_avg_a_to_b);
-    const hodData = scale.map((r) => r.hod_avg_a_to_b);
-    const datasets = [
-      { label: 'Year TE A→B', data: yearData, backgroundColor: '#2563a8aa' },
-      { label: 'Month-average A→B', data: monthData, backgroundColor: '#ea580caa' },
-      { label: 'Week-average A→B', data: weekData, backgroundColor: '#16a34aaa' },
-      { label: 'HOD-average A→B', data: hodData, backgroundColor: '#9333eaaa' },
-    ];
-    if (charts.nestedTe) {
-      charts.nestedTe.data.labels = labels;
-      charts.nestedTe.data.datasets = datasets;
-      charts.nestedTe.update();
-      charts.nestedTe.resize();
-      return;
-    }
-    charts.nestedTe = new Chart(canvas, {
-      type: 'bar',
-      data: { labels, datasets },
-      options: {
-        ...chartDefaults,
-        plugins: {
-          ...chartDefaults.plugins,
-          title: {
-            display: true,
-            text: 'Nested TE (A→B) vs averaging — top pairs in corridor set',
-            font: { size: 12, weight: '600' },
-          },
-        },
-        scales: {
-          ...chartDefaults.scales,
-          y: { ...chartDefaults.scales.y, title: { display: true, text: 'TE (bits)', font: { size: 11 } } },
-        },
-      },
-    });
+    const scale = (nested.scale_table || []).slice(0, 6);
+    const labels = ['Year', 'Month avg', 'Week avg', 'HOD avg'];
+    const datasets = scale.map((r, i) => ({
+      label: r.a + '→' + r.b,
+      data: [r.year_a_to_b, r.month_avg_a_to_b, r.week_avg_a_to_b, r.hod_avg_a_to_b],
+      borderColor: LINE_PALETTE[i % LINE_PALETTE.length],
+      tension: 0.25,
+      spanGaps: true,
+      pointRadius: 3,
+      fill: false,
+    }));
+    upsertLineChart(
+      'nestedTe',
+      canvas,
+      labels,
+      datasets,
+      'Same pair, four time scales (A→B)',
+      'TE (bits)'
+    );
+  }
+
+  function renderNestedHodChart() {
+    const canvas = document.getElementById('nested-hod-line-chart');
+    if (!canvas) return;
+    const scale = (nested.scale_table || []).filter((r) => (r.hod_net_series || []).length).slice(0, 5);
+    const labels = [...Array(24).keys()].map((h) => String(h).padStart(2, '0') + ':00');
+    const datasets = scale.map((r, i) => ({
+      label: r.a + '–' + r.b,
+      data: r.hod_net_series,
+      borderColor: LINE_PALETTE[i % LINE_PALETTE.length],
+      tension: 0.25,
+      spanGaps: true,
+      pointRadius: 2,
+      fill: false,
+    }));
+    upsertLineChart(
+      'nestedHod',
+      canvas,
+      labels,
+      datasets,
+      'Hour-of-day net TE on nested corridors',
+      'Net TE (bits)'
+    );
   }
 
   // --- Network & grid ---

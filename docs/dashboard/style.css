@@ -500,6 +500,30 @@ td.muted { color: #64748b; font-size: 0.8rem; }
 }
 .callout-box strong { color: #7c2d12; }
 
+.explain-grid {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0 0 1rem;
+}
+@media (min-width: 800px) {
+  .explain-grid { grid-template-columns: 1fr 1fr; }
+}
+.explain-card {
+  background: #fff;
+  border: 1px solid #dde4ed;
+  border-radius: 10px;
+  padding: 0.85rem 1.05rem;
+  font-size: 0.86rem;
+  color: #334155;
+  line-height: 1.5;
+}
+.explain-card h3 {
+  margin: 0 0 0.4rem;
+  font-size: 0.9rem;
+  color: #1e3a5f;
+}
+.explain-card p { margin: 0; }
+
 @media (max-width: 640px) {
   #map { height: 320px; }
   .chart-wrap { height: 260px; }
