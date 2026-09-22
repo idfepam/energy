@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-08T12:39:58.937636+00:00",
+  "generated_at": "2026-09-22T09:30:57.609979+00:00",
   "year": 2025,
   "target_zones": 45,
   "zones_with_prices": 43,
@@ -28877,5 +28877,2778 @@
         "class": "paper_coupling"
       }
     ]
+  },
+  "comovement": {
+    "generated_at": "2026-09-21T12:20:01.949645+00:00",
+    "year": 2025,
+    "panel": {
+      "zones": [
+        "AL",
+        "AT",
+        "BE",
+        "BG",
+        "CH",
+        "CZ",
+        "DE_LU",
+        "DK_1",
+        "DK_2",
+        "EE",
+        "ES",
+        "FI",
+        "FR",
+        "GR",
+        "HR",
+        "HU",
+        "IE_SEM",
+        "IT_CNOR",
+        "IT_CSUD",
+        "IT_NORTH",
+        "IT_SARD",
+        "IT_SICI",
+        "IT_SUD",
+        "LT",
+        "LV",
+        "ME",
+        "MK",
+        "NL",
+        "NO_1",
+        "NO_2",
+        "NO_3",
+        "NO_4",
+        "NO_5",
+        "PL",
+        "PT",
+        "RO",
+        "RS",
+        "SE_1",
+        "SE_2",
+        "SE_3",
+        "SE_4",
+        "SI",
+        "SK"
+      ],
+      "n_zones": 43,
+      "hours": 8401,
+      "dropped_zones": [],
+      "resolution": "hourly UTC means (15-min MTU zones averaged into hours)",
+      "min_zone_coverage": 0.9,
+      "max_interpolate_hours": 3
+    },
+    "findings": {
+      "rq1": "On deseasonalised prices a single Europe-wide mode carries 47% of the variance across 43 zones; 5 further cluster dimensions are statistically supported and together carry 29%, leaving 24% in the noise bulk. On raw levels the common mode rises to 59%, so roughly 12 points of apparent Europe-wide co-movement is shared calendar shape rather than shared shocks. The surrogate null and the AR(1)-adjusted Marchenko-Pastur bound agree: 6 and 6 supported modes (naive MP on 8401 raw hours would be far more permissive, since the effective sample is only 801 hours at mean AR(1)=0.83).",
+      "rq2": "3 of 24 strata reorganise beyond the null (Summer (Jun-Aug), Summer (Jun-Aug) / Morning 06-11 UTC, Summer (Jun-Aug) / Midday 12-17 UTC). The 8-cluster partition is Balkans + South-East, Central-West/East core, Italy + Switzerland, Baltics, Iberia + France, Nordic north, North Sea, Nordic south + Atlantic. Across 24 strata the ARI against the full-year baseline runs 0.42-0.87, and mean ARI stays between 0.63 and 0.78 for every k from 5 to 10, so the conclusion does not hinge on the cluster count. What does move with the clock is the Europe-wide mode itself: its share falls to 32% in Summer (Jun-Aug) / Midday 12-17 UTC and peaks at 56% in Night 00-05 UTC - the hours when solar output is largest are the hours when Europe prices least as one market.",
+      "rq3": "Co-movement tracks topology closely but not exactly: level correlation decays monotonically from 0.81 at one hop to 0.10 at 10 hops, adjacency is discriminated at AUC 0.87, and the Mantel correlation between price distance and hop distance is 0.60 (p=0.0002). The divergences are systematic. Directly connected but weakly coupled: FI-NO_4 (r=0.32), NO_3-SE_3 (r=0.45), NO_1-NO_3 (r=0.49) - internal Nordic and HVDC borders where the wire exists but the price rarely converges. Non-adjacent but tightly coupled: HR-RO (r=0.96), IT_CSUD-IT_NORTH (r=0.96), BG-HU (r=0.96) - zones inside one coupled bloc that need no direct line. Border capacity explains part but not most of the split: over the 30 borders with a genuine per-border NTC value, log capacity correlates r=0.3909 with price coupling. The rest is congestion frequency and market-coupling membership. One caveat on the evidence: ENTSO-E republishes each zone's aggregate on most of its borders, so only 37 of 108 NTC borders and 2 of 177 directed flow pairs carry usable per-border numbers - the correlation, convergence and spread figures come from the price panel and are unaffected."
+    },
+    "rq1": {
+      "question": "How much of European price co-movement is a single Europe-wide mode, how much is cluster-specific, and how many cluster dimensions are statistically supported?",
+      "method": "Correlation eigen-decomposition. Significance from 95th-percentile order statistics of phase-randomised surrogates (per-zone spectrum preserved, cross-coupling destroyed), cross-checked against a Marchenko-Pastur bound using an AR(1)-adjusted effective sample size.",
+      "spectrum": {
+        "zones": 43,
+        "hours": 8401,
+        "eigenvalues": [
+          20.3462,
+          3.9509,
+          2.6358,
+          2.0966,
+          2.0098,
+          1.6704,
+          1.109,
+          0.9765,
+          0.9226,
+          0.8059,
+          0.6172,
+          0.5457,
+          0.4953,
+          0.4731,
+          0.4386,
+          0.4207,
+          0.38,
+          0.3309,
+          0.2965,
+          0.275
+        ],
+        "explained": [
+          0.4732,
+          0.0919,
+          0.0613,
+          0.0488,
+          0.0467,
+          0.0388,
+          0.0258,
+          0.0227,
+          0.0215,
+          0.0187,
+          0.0144,
+          0.0127,
+          0.0115,
+          0.011,
+          0.0102,
+          0.0098,
+          0.0088,
+          0.0077,
+          0.0069,
+          0.0064
+        ],
+        "null_q95": [
+          1.7156,
+          1.5737,
+          1.4834,
+          1.4221,
+          1.3726,
+          1.3298,
+          1.2914,
+          1.2594,
+          1.2303,
+          1.2038,
+          1.1777,
+          1.1542,
+          1.1298,
+          1.1108,
+          1.091,
+          1.0721,
+          1.0527,
+          1.0366,
+          1.0216,
+          1.0047
+        ],
+        "null_mean": [
+          1.6174,
+          1.506,
+          1.435,
+          1.3832,
+          1.3377,
+          1.298,
+          1.2641,
+          1.2331,
+          1.206,
+          1.1805,
+          1.1563,
+          1.1338,
+          1.112,
+          1.0924,
+          1.0737,
+          1.0558,
+          1.0374,
+          1.0205,
+          1.0046,
+          0.9891
+        ],
+        "k_significant_95": 6,
+        "k_significant_mp": 6,
+        "cluster_dimensions": 5,
+        "mean_ar1": 0.8259,
+        "n_effective": 801.1,
+        "mp_upper_effective": 1.517,
+        "n_surrogates": 500
+      },
+      "variance": {
+        "residual": {
+          "market": 0.4732,
+          "cluster": 0.2875,
+          "noise": 0.2393
+        },
+        "levels": {
+          "market": 0.5919,
+          "cluster": 0.1625,
+          "noise": 0.2456
+        }
+      },
+      "levels_explained": [
+        0.5919,
+        0.1123,
+        0.0502,
+        0.0398,
+        0.033,
+        0.0269,
+        0.0202,
+        0.0176,
+        0.0168,
+        0.0101,
+        0.0084,
+        0.0079,
+        0.0069,
+        0.0062,
+        0.0056,
+        0.0049,
+        0.0045,
+        0.004,
+        0.0039,
+        0.0035
+      ],
+      "modes": [
+        {
+          "mode": 1,
+          "eigenvalue": 20.3462,
+          "explained": 0.4732,
+          "significant": true,
+          "all_same_sign": true,
+          "loadings": [
+            {
+              "zone": "HR",
+              "loading": 0.199
+            },
+            {
+              "zone": "CZ",
+              "loading": 0.198
+            },
+            {
+              "zone": "HU",
+              "loading": 0.195
+            },
+            {
+              "zone": "SI",
+              "loading": 0.194
+            },
+            {
+              "zone": "NL",
+              "loading": 0.193
+            },
+            {
+              "zone": "SK",
+              "loading": 0.193
+            },
+            {
+              "zone": "RO",
+              "loading": 0.188
+            },
+            {
+              "zone": "DK_1",
+              "loading": 0.186
+            }
+          ]
+        },
+        {
+          "mode": 2,
+          "eigenvalue": 3.9509,
+          "explained": 0.0919,
+          "significant": true,
+          "all_same_sign": false,
+          "loadings": [
+            {
+              "zone": "SE_1",
+              "loading": 0.346
+            },
+            {
+              "zone": "SE_2",
+              "loading": 0.339
+            },
+            {
+              "zone": "NO_3",
+              "loading": 0.283
+            },
+            {
+              "zone": "FI",
+              "loading": 0.266
+            },
+            {
+              "zone": "NO_5",
+              "loading": 0.252
+            },
+            {
+              "zone": "SE_3",
+              "loading": 0.251
+            },
+            {
+              "zone": "NO_1",
+              "loading": 0.228
+            },
+            {
+              "zone": "NO_4",
+              "loading": 0.215
+            }
+          ]
+        },
+        {
+          "mode": 3,
+          "eigenvalue": 2.6358,
+          "explained": 0.0613,
+          "significant": true,
+          "all_same_sign": false,
+          "loadings": [
+            {
+              "zone": "IT_SUD",
+              "loading": 0.349
+            },
+            {
+              "zone": "IT_SARD",
+              "loading": 0.333
+            },
+            {
+              "zone": "IT_CSUD",
+              "loading": 0.329
+            },
+            {
+              "zone": "IT_NORTH",
+              "loading": 0.316
+            },
+            {
+              "zone": "IT_CNOR",
+              "loading": 0.309
+            },
+            {
+              "zone": "IT_SICI",
+              "loading": 0.286
+            },
+            {
+              "zone": "LT",
+              "loading": -0.167
+            },
+            {
+              "zone": "LV",
+              "loading": -0.166
+            }
+          ]
+        },
+        {
+          "mode": 4,
+          "eigenvalue": 2.0966,
+          "explained": 0.0488,
+          "significant": true,
+          "all_same_sign": false,
+          "loadings": [
+            {
+              "zone": "ES",
+              "loading": 0.487
+            },
+            {
+              "zone": "PT",
+              "loading": 0.486
+            },
+            {
+              "zone": "FR",
+              "loading": 0.353
+            },
+            {
+              "zone": "SE_1",
+              "loading": -0.198
+            },
+            {
+              "zone": "SE_2",
+              "loading": -0.197
+            },
+            {
+              "zone": "BE",
+              "loading": 0.181
+            },
+            {
+              "zone": "EE",
+              "loading": -0.171
+            },
+            {
+              "zone": "LV",
+              "loading": -0.152
+            }
+          ]
+        },
+        {
+          "mode": 5,
+          "eigenvalue": 2.0098,
+          "explained": 0.0467,
+          "significant": true,
+          "all_same_sign": false,
+          "loadings": [
+            {
+              "zone": "LV",
+              "loading": 0.352
+            },
+            {
+              "zone": "LT",
+              "loading": 0.348
+            },
+            {
+              "zone": "EE",
+              "loading": 0.345
+            },
+            {
+              "zone": "NO_3",
+              "loading": -0.3
+            },
+            {
+              "zone": "NO_4",
+              "loading": -0.264
+            },
+            {
+              "zone": "SE_2",
+              "loading": -0.24
+            },
+            {
+              "zone": "SE_1",
+              "loading": -0.225
+            },
+            {
+              "zone": "RS",
+              "loading": -0.189
+            }
+          ]
+        },
+        {
+          "mode": 6,
+          "eigenvalue": 1.6704,
+          "explained": 0.0388,
+          "significant": true,
+          "all_same_sign": false,
+          "loadings": [
+            {
+              "zone": "PT",
+              "loading": 0.404
+            },
+            {
+              "zone": "ES",
+              "loading": 0.394
+            },
+            {
+              "zone": "EE",
+              "loading": 0.29
+            },
+            {
+              "zone": "LV",
+              "loading": 0.284
+            },
+            {
+              "zone": "LT",
+              "loading": 0.278
+            },
+            {
+              "zone": "NO_1",
+              "loading": -0.223
+            },
+            {
+              "zone": "NO_2",
+              "loading": -0.22
+            },
+            {
+              "zone": "DK_1",
+              "loading": -0.204
+            }
+          ]
+        }
+      ]
+    },
+    "rq2": {
+      "question": "Do the price clusters persist across seasons and intraday, or does the partition reorganise?",
+      "method": "Average-linkage clustering on sqrt(2(1-C_group)) where C_group is the correlation rebuilt from modes 2..k (market mode removed). Partitions compared to the full-year baseline by Adjusted Rand Index against a stratum-label permutation null of the same sample size.",
+      "k": 8,
+      "clusters": [
+        {
+          "cluster": 1,
+          "name": "Balkans + South-East",
+          "members": [
+            "AL",
+            "BG",
+            "GR",
+            "HR",
+            "HU",
+            "ME",
+            "MK",
+            "RO",
+            "RS",
+            "SI"
+          ],
+          "size": 10
+        },
+        {
+          "cluster": 2,
+          "name": "Central-West/East core",
+          "members": [
+            "AT",
+            "CZ",
+            "DE_LU",
+            "PL",
+            "SK"
+          ],
+          "size": 5
+        },
+        {
+          "cluster": 3,
+          "name": "Italy + Switzerland",
+          "members": [
+            "CH",
+            "IT_CNOR",
+            "IT_CSUD",
+            "IT_NORTH",
+            "IT_SARD",
+            "IT_SICI",
+            "IT_SUD"
+          ],
+          "size": 7
+        },
+        {
+          "cluster": 4,
+          "name": "Baltics",
+          "members": [
+            "EE",
+            "LT",
+            "LV"
+          ],
+          "size": 3
+        },
+        {
+          "cluster": 5,
+          "name": "Iberia + France",
+          "members": [
+            "ES",
+            "FR",
+            "PT"
+          ],
+          "size": 3
+        },
+        {
+          "cluster": 6,
+          "name": "Nordic north",
+          "members": [
+            "NO_3",
+            "NO_4",
+            "SE_1",
+            "SE_2"
+          ],
+          "size": 4
+        },
+        {
+          "cluster": 7,
+          "name": "North Sea",
+          "members": [
+            "BE",
+            "DK_1",
+            "DK_2",
+            "NL"
+          ],
+          "size": 4
+        },
+        {
+          "cluster": 8,
+          "name": "Nordic south + Atlantic",
+          "members": [
+            "FI",
+            "IE_SEM",
+            "NO_1",
+            "NO_2",
+            "NO_5",
+            "SE_3",
+            "SE_4"
+          ],
+          "size": 7
+        }
+      ],
+      "baseline_silhouette": 0.5715,
+      "cluster_scan": [
+        {
+          "k": 2,
+          "silhouette": 0.3302,
+          "sizes": [
+            28,
+            15
+          ]
+        },
+        {
+          "k": 3,
+          "silhouette": 0.4339,
+          "sizes": [
+            21,
+            15,
+            7
+          ]
+        },
+        {
+          "k": 4,
+          "silhouette": 0.4581,
+          "sizes": [
+            18,
+            15,
+            7,
+            3
+          ]
+        },
+        {
+          "k": 5,
+          "silhouette": 0.4929,
+          "sizes": [
+            15,
+            15,
+            7,
+            3,
+            3
+          ]
+        },
+        {
+          "k": 6,
+          "silhouette": 0.5468,
+          "sizes": [
+            15,
+            11,
+            7,
+            4,
+            3,
+            3
+          ]
+        },
+        {
+          "k": 7,
+          "silhouette": 0.5595,
+          "sizes": [
+            11,
+            10,
+            7,
+            5,
+            4,
+            3,
+            3
+          ]
+        },
+        {
+          "k": 8,
+          "silhouette": 0.5715,
+          "sizes": [
+            10,
+            7,
+            7,
+            5,
+            4,
+            4,
+            3,
+            3
+          ]
+        },
+        {
+          "k": 9,
+          "silhouette": 0.5766,
+          "sizes": [
+            10,
+            7,
+            6,
+            5,
+            4,
+            4,
+            3,
+            3,
+            1
+          ]
+        },
+        {
+          "k": 10,
+          "silhouette": 0.5725,
+          "sizes": [
+            10,
+            7,
+            6,
+            4,
+            4,
+            4,
+            3,
+            3,
+            1,
+            1
+          ]
+        },
+        {
+          "k": 11,
+          "silhouette": 0.5885,
+          "sizes": [
+            10,
+            6,
+            4,
+            4,
+            4,
+            4,
+            3,
+            3,
+            3,
+            1,
+            1
+          ]
+        },
+        {
+          "k": 12,
+          "silhouette": 0.5725,
+          "sizes": [
+            10,
+            6,
+            4,
+            4,
+            4,
+            3,
+            3,
+            3,
+            3,
+            1,
+            1,
+            1
+          ]
+        }
+      ],
+      "k_sensitivity": [
+        {
+          "k": 5,
+          "mean_ari": 0.6298,
+          "min_ari": 0.4505,
+          "silhouette": 0.4929
+        },
+        {
+          "k": 6,
+          "mean_ari": 0.6844,
+          "min_ari": 0.5643,
+          "silhouette": 0.5468
+        },
+        {
+          "k": 7,
+          "mean_ari": 0.7023,
+          "min_ari": 0.5371,
+          "silhouette": 0.5595
+        },
+        {
+          "k": 8,
+          "mean_ari": 0.7523,
+          "min_ari": 0.653,
+          "silhouette": 0.5715
+        },
+        {
+          "k": 9,
+          "mean_ari": 0.7519,
+          "min_ari": 0.6613,
+          "silhouette": 0.5766
+        },
+        {
+          "k": 10,
+          "mean_ari": 0.779,
+          "min_ari": 0.6959,
+          "silhouette": 0.5725
+        }
+      ],
+      "k_selection": "smallest k within 0.01 silhouette of the best eligible value (no singleton clusters, k <= 2x the supported mode count)",
+      "seasons": [
+        {
+          "stratum": "DJF",
+          "label": "Winter (Dec-Feb)",
+          "hours": 2136,
+          "ari": 0.7219,
+          "null_median": 0.755,
+          "null_p05": 0.6671,
+          "reorganised": false,
+          "market_mode_share": 0.5112,
+          "silhouette": 0.5434,
+          "moved_zones": [
+            "AT",
+            "BE",
+            "CZ",
+            "DE_LU",
+            "DK_1",
+            "DK_2",
+            "IE_SEM",
+            "NL",
+            "PL",
+            "SK"
+          ],
+          "merged_clusters": [
+            [
+              1,
+              2
+            ],
+            [
+              5,
+              7,
+              8
+            ],
+            [
+              7,
+              8
+            ]
+          ],
+          "split_clusters": [
+            2,
+            7,
+            8
+          ]
+        },
+        {
+          "stratum": "MAM",
+          "label": "Spring (Mar-May)",
+          "hours": 2112,
+          "ari": 0.699,
+          "null_median": 0.7471,
+          "null_p05": 0.6363,
+          "reorganised": false,
+          "market_mode_share": 0.4941,
+          "silhouette": 0.5178,
+          "moved_zones": [
+            "AT",
+            "CZ",
+            "DE_LU",
+            "FI",
+            "IE_SEM",
+            "NO_1",
+            "NO_2",
+            "NO_5",
+            "PL",
+            "SE_3",
+            "SE_4",
+            "SK"
+          ],
+          "merged_clusters": [
+            [
+              1,
+              2
+            ],
+            [
+              2,
+              7,
+              8
+            ],
+            [
+              4,
+              8
+            ],
+            [
+              6,
+              8
+            ]
+          ],
+          "split_clusters": [
+            2,
+            8
+          ]
+        },
+        {
+          "stratum": "JJA",
+          "label": "Summer (Jun-Aug)",
+          "hours": 2081,
+          "ari": 0.653,
+          "null_median": 0.7587,
+          "null_p05": 0.6717,
+          "reorganised": true,
+          "market_mode_share": 0.5052,
+          "silhouette": 0.5065,
+          "moved_zones": [
+            "CH",
+            "IE_SEM",
+            "NO_2",
+            "NO_3",
+            "NO_4",
+            "NO_5",
+            "PL",
+            "SE_1",
+            "SE_2",
+            "SK"
+          ],
+          "merged_clusters": [
+            [
+              2,
+              3,
+              7,
+              8
+            ],
+            [
+              4,
+              8
+            ],
+            [
+              6,
+              8
+            ]
+          ],
+          "split_clusters": [
+            2,
+            3,
+            6,
+            8
+          ]
+        },
+        {
+          "stratum": "SON",
+          "label": "Autumn (Sep-Nov)",
+          "hours": 2072,
+          "ari": 0.8434,
+          "null_median": 0.752,
+          "null_p05": 0.6402,
+          "reorganised": false,
+          "market_mode_share": 0.4291,
+          "silhouette": 0.5587,
+          "moved_zones": [
+            "CH"
+          ],
+          "merged_clusters": [
+            [
+              7,
+              8
+            ]
+          ],
+          "split_clusters": [
+            3
+          ]
+        }
+      ],
+      "hour_blocks": [
+        {
+          "stratum": "night",
+          "label": "Night 00-05 UTC",
+          "hours": 2132,
+          "ari": 0.7478,
+          "null_median": 0.7876,
+          "null_p05": 0.7025,
+          "reorganised": false,
+          "market_mode_share": 0.5573,
+          "silhouette": 0.5393,
+          "moved_zones": [
+            "AT",
+            "FI",
+            "SE_3",
+            "SE_4",
+            "SK"
+          ],
+          "merged_clusters": [
+            [
+              1,
+              2
+            ],
+            [
+              7,
+              8
+            ]
+          ],
+          "split_clusters": [
+            2,
+            8
+          ]
+        },
+        {
+          "stratum": "morning",
+          "label": "Morning 06-11 UTC",
+          "hours": 2128,
+          "ari": 0.7478,
+          "null_median": 0.7959,
+          "null_p05": 0.7011,
+          "reorganised": false,
+          "market_mode_share": 0.4859,
+          "silhouette": 0.5184,
+          "moved_zones": [
+            "AT",
+            "CH",
+            "NO_5",
+            "SK"
+          ],
+          "merged_clusters": [
+            [
+              1,
+              2
+            ],
+            [
+              2,
+              7
+            ],
+            [
+              6,
+              8
+            ]
+          ],
+          "split_clusters": [
+            2,
+            3,
+            8
+          ]
+        },
+        {
+          "stratum": "midday",
+          "label": "Midday 12-17 UTC",
+          "hours": 1968,
+          "ari": 0.8685,
+          "null_median": 0.7959,
+          "null_p05": 0.7074,
+          "reorganised": false,
+          "market_mode_share": 0.4298,
+          "silhouette": 0.5758,
+          "moved_zones": [
+            "DE_LU",
+            "FI",
+            "IE_SEM"
+          ],
+          "merged_clusters": [
+            [
+              2,
+              7
+            ],
+            [
+              5,
+              8
+            ],
+            [
+              6,
+              8
+            ]
+          ],
+          "split_clusters": [
+            2,
+            8
+          ]
+        },
+        {
+          "stratum": "evening",
+          "label": "Evening 18-23 UTC",
+          "hours": 2173,
+          "ari": 0.7366,
+          "null_median": 0.7959,
+          "null_p05": 0.6932,
+          "reorganised": false,
+          "market_mode_share": 0.4762,
+          "silhouette": 0.595,
+          "moved_zones": [
+            "CH",
+            "IE_SEM",
+            "PL",
+            "SK"
+          ],
+          "merged_clusters": [
+            [
+              1,
+              2
+            ],
+            [
+              2,
+              7,
+              8
+            ]
+          ],
+          "split_clusters": [
+            2,
+            3,
+            8
+          ]
+        }
+      ],
+      "season_hour": [
+        {
+          "stratum": "DJF|night",
+          "label": "Winter (Dec-Feb) / Night 00-05 UTC",
+          "hours": 536,
+          "ari": 0.7782,
+          "null_median": 0.7338,
+          "null_p05": 0.5817,
+          "reorganised": false,
+          "market_mode_share": 0.4673,
+          "silhouette": 0.5799,
+          "moved_zones": [
+            "AT",
+            "CZ",
+            "DE_LU",
+            "FR",
+            "IE_SEM",
+            "PL",
+            "SK"
+          ],
+          "merged_clusters": [
+            [
+              1,
+              2
+            ],
+            [
+              5,
+              7,
+              8
+            ],
+            [
+              2,
+              5
+            ]
+          ],
+          "split_clusters": [
+            2,
+            5,
+            8
+          ]
+        },
+        {
+          "stratum": "DJF|morning",
+          "label": "Winter (Dec-Feb) / Morning 06-11 UTC",
+          "hours": 538,
+          "ari": 0.6672,
+          "null_median": 0.7338,
+          "null_p05": 0.5817,
+          "reorganised": false,
+          "market_mode_share": 0.5073,
+          "silhouette": 0.5089,
+          "moved_zones": [
+            "AT",
+            "BE",
+            "CZ",
+            "DE_LU",
+            "DK_1",
+            "DK_2",
+            "IE_SEM",
+            "NL",
+            "NO_5",
+            "PL",
+            "SK"
+          ],
+          "merged_clusters": [
+            [
+              1,
+              2
+            ],
+            [
+              2,
+              3
+            ],
+            [
+              5,
+              7,
+              8
+            ],
+            [
+              7,
+              8
+            ],
+            [
+              6,
+              8
+            ]
+          ],
+          "split_clusters": [
+            2,
+            7,
+            8
+          ]
+        },
+        {
+          "stratum": "DJF|midday",
+          "label": "Winter (Dec-Feb) / Midday 12-17 UTC",
+          "hours": 527,
+          "ari": 0.6877,
+          "null_median": 0.7338,
+          "null_p05": 0.5817,
+          "reorganised": false,
+          "market_mode_share": 0.4639,
+          "silhouette": 0.5668,
+          "moved_zones": [
+            "BE",
+            "CZ",
+            "DK_1",
+            "DK_2",
+            "FR",
+            "IE_SEM",
+            "NL"
+          ],
+          "merged_clusters": [
+            [
+              1,
+              2
+            ],
+            [
+              5,
+              7
+            ],
+            [
+              7,
+              8
+            ],
+            [
+              5,
+              8
+            ]
+          ],
+          "split_clusters": [
+            2,
+            5,
+            7,
+            8
+          ]
+        },
+        {
+          "stratum": "DJF|evening",
+          "label": "Winter (Dec-Feb) / Evening 18-23 UTC",
+          "hours": 535,
+          "ari": 0.7166,
+          "null_median": 0.7338,
+          "null_p05": 0.5817,
+          "reorganised": false,
+          "market_mode_share": 0.3908,
+          "silhouette": 0.5281,
+          "moved_zones": [
+            "AT",
+            "CZ",
+            "DE_LU",
+            "FR",
+            "IE_SEM",
+            "PL",
+            "SK"
+          ],
+          "merged_clusters": [
+            [
+              1,
+              2
+            ],
+            [
+              5,
+              7,
+              8
+            ],
+            [
+              2,
+              4
+            ],
+            [
+              6,
+              8
+            ]
+          ],
+          "split_clusters": [
+            2,
+            5,
+            8
+          ]
+        },
+        {
+          "stratum": "MAM|night",
+          "label": "Spring (Mar-May) / Night 00-05 UTC",
+          "hours": 549,
+          "ari": 0.5995,
+          "null_median": 0.7338,
+          "null_p05": 0.5817,
+          "reorganised": false,
+          "market_mode_share": 0.4726,
+          "silhouette": 0.5424,
+          "moved_zones": [
+            "FI",
+            "HR",
+            "HU",
+            "IE_SEM",
+            "ME",
+            "NO_1",
+            "NO_2",
+            "NO_5",
+            "PL",
+            "SE_3",
+            "SE_4",
+            "SI"
+          ],
+          "merged_clusters": [
+            [
+              1,
+              2
+            ],
+            [
+              1,
+              2
+            ],
+            [
+              7,
+              8
+            ],
+            [
+              4,
+              8
+            ]
+          ],
+          "split_clusters": [
+            1,
+            2,
+            8
+          ]
+        },
+        {
+          "stratum": "MAM|morning",
+          "label": "Spring (Mar-May) / Morning 06-11 UTC",
+          "hours": 541,
+          "ari": 0.617,
+          "null_median": 0.7338,
+          "null_p05": 0.5817,
+          "reorganised": false,
+          "market_mode_share": 0.4502,
+          "silhouette": 0.5065,
+          "moved_zones": [
+            "CH",
+            "DE_LU",
+            "FI",
+            "IE_SEM",
+            "NO_1",
+            "NO_2",
+            "NO_5",
+            "PL",
+            "SE_3",
+            "SE_4"
+          ],
+          "merged_clusters": [
+            [
+              1,
+              2
+            ],
+            [
+              2,
+              7
+            ],
+            [
+              4,
+              8
+            ],
+            [
+              6,
+              8
+            ]
+          ],
+          "split_clusters": [
+            2,
+            3,
+            8
+          ]
+        },
+        {
+          "stratum": "MAM|midday",
+          "label": "Spring (Mar-May) / Midday 12-17 UTC",
+          "hours": 470,
+          "ari": 0.6866,
+          "null_median": 0.7338,
+          "null_p05": 0.5817,
+          "reorganised": false,
+          "market_mode_share": 0.3918,
+          "silhouette": 0.525,
+          "moved_zones": [
+            "AT",
+            "CZ",
+            "DE_LU",
+            "FI",
+            "IE_SEM",
+            "NO_1",
+            "NO_2",
+            "NO_3",
+            "NO_4",
+            "NO_5",
+            "PL",
+            "SE_1",
+            "SE_2",
+            "SE_3",
+            "SE_4",
+            "SK"
+          ],
+          "merged_clusters": [
+            [
+              1,
+              2
+            ],
+            [
+              2,
+              7
+            ],
+            [
+              2,
+              4,
+              8
+            ],
+            [
+              6,
+              8
+            ],
+            [
+              6,
+              8
+            ]
+          ],
+          "split_clusters": [
+            2,
+            6,
+            8
+          ]
+        },
+        {
+          "stratum": "MAM|evening",
+          "label": "Spring (Mar-May) / Evening 18-23 UTC",
+          "hours": 552,
+          "ari": 0.7178,
+          "null_median": 0.7338,
+          "null_p05": 0.5817,
+          "reorganised": false,
+          "market_mode_share": 0.3605,
+          "silhouette": 0.6034,
+          "moved_zones": [
+            "AT",
+            "CZ",
+            "DE_LU",
+            "IE_SEM",
+            "NO_3",
+            "NO_4",
+            "NO_5",
+            "PL",
+            "SE_1",
+            "SE_2",
+            "SK"
+          ],
+          "merged_clusters": [
+            [
+              1,
+              2
+            ],
+            [
+              2,
+              7
+            ],
+            [
+              6,
+              8
+            ],
+            [
+              6,
+              8
+            ]
+          ],
+          "split_clusters": [
+            2,
+            6,
+            8
+          ]
+        },
+        {
+          "stratum": "JJA|night",
+          "label": "Summer (Jun-Aug) / Night 00-05 UTC",
+          "hours": 542,
+          "ari": 0.6874,
+          "null_median": 0.7338,
+          "null_p05": 0.5817,
+          "reorganised": false,
+          "market_mode_share": 0.4825,
+          "silhouette": 0.4664,
+          "moved_zones": [
+            "CH",
+            "FI",
+            "FR",
+            "IE_SEM",
+            "NO_2",
+            "NO_3",
+            "NO_4",
+            "SE_1",
+            "SE_2"
+          ],
+          "merged_clusters": [
+            [
+              3,
+              7,
+              8
+            ],
+            [
+              4,
+              8
+            ],
+            [
+              6,
+              8
+            ],
+            [
+              3,
+              6
+            ]
+          ],
+          "split_clusters": [
+            3,
+            5,
+            6,
+            8
+          ]
+        },
+        {
+          "stratum": "JJA|morning",
+          "label": "Summer (Jun-Aug) / Morning 06-11 UTC",
+          "hours": 523,
+          "ari": 0.4236,
+          "null_median": 0.7338,
+          "null_p05": 0.5817,
+          "reorganised": true,
+          "market_mode_share": 0.3641,
+          "silhouette": 0.4964,
+          "moved_zones": [
+            "AL",
+            "CH",
+            "DE_LU",
+            "FI",
+            "IE_SEM",
+            "ME",
+            "NO_1",
+            "NO_2",
+            "NO_3",
+            "NO_4",
+            "NO_5",
+            "PL",
+            "SE_1",
+            "SE_2",
+            "SE_3",
+            "SE_4"
+          ],
+          "merged_clusters": [
+            [
+              1,
+              2
+            ],
+            [
+              2,
+              3,
+              7,
+              8
+            ],
+            [
+              4,
+              6,
+              8
+            ],
+            [
+              1,
+              3
+            ],
+            [
+              2,
+              6
+            ]
+          ],
+          "split_clusters": [
+            1,
+            2,
+            3,
+            6,
+            8
+          ]
+        },
+        {
+          "stratum": "JJA|midday",
+          "label": "Summer (Jun-Aug) / Midday 12-17 UTC",
+          "hours": 472,
+          "ari": 0.4411,
+          "null_median": 0.7338,
+          "null_p05": 0.5817,
+          "reorganised": true,
+          "market_mode_share": 0.3175,
+          "silhouette": 0.5098,
+          "moved_zones": [
+            "AL",
+            "CH",
+            "DE_LU",
+            "FI",
+            "IE_SEM",
+            "ME",
+            "MK",
+            "NO_1",
+            "NO_2",
+            "NO_5",
+            "RS",
+            "SE_3",
+            "SE_4",
+            "SK"
+          ],
+          "merged_clusters": [
+            [
+              2,
+              3,
+              7,
+              8
+            ],
+            [
+              1,
+              2
+            ],
+            [
+              4,
+              6,
+              8
+            ]
+          ],
+          "split_clusters": [
+            1,
+            2,
+            3,
+            8
+          ]
+        },
+        {
+          "stratum": "JJA|evening",
+          "label": "Summer (Jun-Aug) / Evening 18-23 UTC",
+          "hours": 544,
+          "ari": 0.6083,
+          "null_median": 0.7338,
+          "null_p05": 0.5817,
+          "reorganised": false,
+          "market_mode_share": 0.3789,
+          "silhouette": 0.5616,
+          "moved_zones": [
+            "CH",
+            "FI",
+            "FR",
+            "IE_SEM",
+            "IT_NORTH",
+            "NO_3",
+            "NO_4",
+            "PL",
+            "SE_1",
+            "SE_2",
+            "SK"
+          ],
+          "merged_clusters": [
+            [
+              2,
+              3,
+              5,
+              7
+            ],
+            [
+              4,
+              8
+            ],
+            [
+              6,
+              8
+            ],
+            [
+              3,
+              6,
+              8
+            ]
+          ],
+          "split_clusters": [
+            2,
+            3,
+            5,
+            6,
+            8
+          ]
+        },
+        {
+          "stratum": "SON|night",
+          "label": "Autumn (Sep-Nov) / Night 00-05 UTC",
+          "hours": 505,
+          "ari": 0.6831,
+          "null_median": 0.7338,
+          "null_p05": 0.5817,
+          "reorganised": false,
+          "market_mode_share": 0.5166,
+          "silhouette": 0.4873,
+          "moved_zones": [
+            "AT",
+            "FI",
+            "IE_SEM"
+          ],
+          "merged_clusters": [
+            [
+              2,
+              7,
+              8
+            ],
+            [
+              5,
+              8
+            ]
+          ],
+          "split_clusters": [
+            2,
+            8
+          ]
+        },
+        {
+          "stratum": "SON|morning",
+          "label": "Autumn (Sep-Nov) / Morning 06-11 UTC",
+          "hours": 526,
+          "ari": 0.7426,
+          "null_median": 0.7338,
+          "null_p05": 0.5817,
+          "reorganised": false,
+          "market_mode_share": 0.4209,
+          "silhouette": 0.5059,
+          "moved_zones": [
+            "AT",
+            "BE",
+            "DK_1",
+            "DK_2",
+            "IE_SEM",
+            "ME",
+            "NL"
+          ],
+          "merged_clusters": [
+            [
+              1,
+              2
+            ],
+            [
+              1,
+              3
+            ],
+            [
+              2,
+              7,
+              8
+            ]
+          ],
+          "split_clusters": [
+            1,
+            2,
+            7,
+            8
+          ]
+        },
+        {
+          "stratum": "SON|midday",
+          "label": "Autumn (Sep-Nov) / Midday 12-17 UTC",
+          "hours": 499,
+          "ari": 0.7596,
+          "null_median": 0.7338,
+          "null_p05": 0.5817,
+          "reorganised": false,
+          "market_mode_share": 0.4087,
+          "silhouette": 0.5668,
+          "moved_zones": [
+            "BE",
+            "CH",
+            "FI",
+            "PL",
+            "SE_3",
+            "SE_4"
+          ],
+          "merged_clusters": [
+            [
+              5,
+              7
+            ],
+            [
+              3,
+              8
+            ],
+            [
+              7,
+              8
+            ],
+            [
+              2,
+              4
+            ],
+            [
+              6,
+              8
+            ]
+          ],
+          "split_clusters": [
+            2,
+            3,
+            7,
+            8
+          ]
+        },
+        {
+          "stratum": "SON|evening",
+          "label": "Autumn (Sep-Nov) / Evening 18-23 UTC",
+          "hours": 542,
+          "ari": 0.7232,
+          "null_median": 0.7338,
+          "null_p05": 0.5817,
+          "reorganised": false,
+          "market_mode_share": 0.4077,
+          "silhouette": 0.4622,
+          "moved_zones": [
+            "AT",
+            "BE",
+            "DK_1",
+            "DK_2",
+            "FI",
+            "IE_SEM",
+            "NL",
+            "NO_1",
+            "NO_2",
+            "NO_5",
+            "PL",
+            "SE_3",
+            "SE_4"
+          ],
+          "merged_clusters": [
+            [
+              7,
+              8
+            ],
+            [
+              2,
+              7,
+              8
+            ],
+            [
+              4,
+              8
+            ]
+          ],
+          "split_clusters": [
+            2,
+            7,
+            8
+          ]
+        }
+      ],
+      "zone_stability": [
+        {
+          "zone": "IE_SEM",
+          "cluster": 8,
+          "loyalty": 0.312,
+          "defection": 0.104,
+          "stability": 0.208
+        },
+        {
+          "zone": "SK",
+          "cluster": 2,
+          "loyalty": 0.375,
+          "defection": 0.164,
+          "stability": 0.211
+        },
+        {
+          "zone": "DE_LU",
+          "cluster": 2,
+          "loyalty": 0.406,
+          "defection": 0.079,
+          "stability": 0.327
+        },
+        {
+          "zone": "PL",
+          "cluster": 2,
+          "loyalty": 0.438,
+          "defection": 0.079,
+          "stability": 0.359
+        },
+        {
+          "zone": "AT",
+          "cluster": 2,
+          "loyalty": 0.469,
+          "defection": 0.102,
+          "stability": 0.367
+        },
+        {
+          "zone": "CZ",
+          "cluster": 2,
+          "loyalty": 0.5,
+          "defection": 0.049,
+          "stability": 0.451
+        },
+        {
+          "zone": "CH",
+          "cluster": 3,
+          "loyalty": 0.5,
+          "defection": 0.028,
+          "stability": 0.472
+        },
+        {
+          "zone": "NO_5",
+          "cluster": 8,
+          "loyalty": 0.542,
+          "defection": 0.069,
+          "stability": 0.472
+        },
+        {
+          "zone": "FI",
+          "cluster": 8,
+          "loyalty": 0.583,
+          "defection": 0.056,
+          "stability": 0.528
+        },
+        {
+          "zone": "NO_2",
+          "cluster": 8,
+          "loyalty": 0.625,
+          "defection": 0.076,
+          "stability": 0.549
+        },
+        {
+          "zone": "SE_3",
+          "cluster": 8,
+          "loyalty": 0.667,
+          "defection": 0.042,
+          "stability": 0.625
+        },
+        {
+          "zone": "SE_4",
+          "cluster": 8,
+          "loyalty": 0.667,
+          "defection": 0.042,
+          "stability": 0.625
+        },
+        {
+          "zone": "NO_1",
+          "cluster": 8,
+          "loyalty": 0.688,
+          "defection": 0.059,
+          "stability": 0.628
+        },
+        {
+          "zone": "DK_1",
+          "cluster": 7,
+          "loyalty": 0.917,
+          "defection": 0.103,
+          "stability": 0.814
+        },
+        {
+          "zone": "DK_2",
+          "cluster": 7,
+          "loyalty": 0.917,
+          "defection": 0.103,
+          "stability": 0.814
+        },
+        {
+          "zone": "BE",
+          "cluster": 7,
+          "loyalty": 0.917,
+          "defection": 0.096,
+          "stability": 0.821
+        },
+        {
+          "zone": "NL",
+          "cluster": 7,
+          "loyalty": 0.917,
+          "defection": 0.096,
+          "stability": 0.821
+        },
+        {
+          "zone": "NO_3",
+          "cluster": 6,
+          "loyalty": 0.917,
+          "defection": 0.022,
+          "stability": 0.894
+        },
+        {
+          "zone": "NO_4",
+          "cluster": 6,
+          "loyalty": 0.917,
+          "defection": 0.022,
+          "stability": 0.894
+        },
+        {
+          "zone": "SE_1",
+          "cluster": 6,
+          "loyalty": 0.917,
+          "defection": 0.016,
+          "stability": 0.901
+        },
+        {
+          "zone": "SE_2",
+          "cluster": 6,
+          "loyalty": 0.917,
+          "defection": 0.016,
+          "stability": 0.901
+        },
+        {
+          "zone": "IT_CNOR",
+          "cluster": 3,
+          "loyalty": 0.917,
+          "defection": 0.0,
+          "stability": 0.917
+        },
+        {
+          "zone": "IT_CSUD",
+          "cluster": 3,
+          "loyalty": 0.917,
+          "defection": 0.0,
+          "stability": 0.917
+        },
+        {
+          "zone": "IT_NORTH",
+          "cluster": 3,
+          "loyalty": 0.917,
+          "defection": 0.0,
+          "stability": 0.917
+        },
+        {
+          "zone": "IT_SARD",
+          "cluster": 3,
+          "loyalty": 0.917,
+          "defection": 0.0,
+          "stability": 0.917
+        },
+        {
+          "zone": "IT_SICI",
+          "cluster": 3,
+          "loyalty": 0.917,
+          "defection": 0.0,
+          "stability": 0.917
+        },
+        {
+          "zone": "IT_SUD",
+          "cluster": 3,
+          "loyalty": 0.917,
+          "defection": 0.0,
+          "stability": 0.917
+        },
+        {
+          "zone": "AL",
+          "cluster": 1,
+          "loyalty": 1.0,
+          "defection": 0.034,
+          "stability": 0.966
+        },
+        {
+          "zone": "BG",
+          "cluster": 1,
+          "loyalty": 1.0,
+          "defection": 0.034,
+          "stability": 0.966
+        },
+        {
+          "zone": "GR",
+          "cluster": 1,
+          "loyalty": 1.0,
+          "defection": 0.034,
+          "stability": 0.966
+        },
+        {
+          "zone": "HR",
+          "cluster": 1,
+          "loyalty": 1.0,
+          "defection": 0.034,
+          "stability": 0.966
+        },
+        {
+          "zone": "HU",
+          "cluster": 1,
+          "loyalty": 1.0,
+          "defection": 0.034,
+          "stability": 0.966
+        },
+        {
+          "zone": "ME",
+          "cluster": 1,
+          "loyalty": 1.0,
+          "defection": 0.034,
+          "stability": 0.966
+        },
+        {
+          "zone": "MK",
+          "cluster": 1,
+          "loyalty": 1.0,
+          "defection": 0.034,
+          "stability": 0.966
+        },
+        {
+          "zone": "RO",
+          "cluster": 1,
+          "loyalty": 1.0,
+          "defection": 0.034,
+          "stability": 0.966
+        },
+        {
+          "zone": "RS",
+          "cluster": 1,
+          "loyalty": 1.0,
+          "defection": 0.034,
+          "stability": 0.966
+        },
+        {
+          "zone": "SI",
+          "cluster": 1,
+          "loyalty": 1.0,
+          "defection": 0.034,
+          "stability": 0.966
+        },
+        {
+          "zone": "EE",
+          "cluster": 4,
+          "loyalty": 1.0,
+          "defection": 0.022,
+          "stability": 0.978
+        },
+        {
+          "zone": "LT",
+          "cluster": 4,
+          "loyalty": 1.0,
+          "defection": 0.022,
+          "stability": 0.978
+        },
+        {
+          "zone": "LV",
+          "cluster": 4,
+          "loyalty": 1.0,
+          "defection": 0.022,
+          "stability": 0.978
+        },
+        {
+          "zone": "ES",
+          "cluster": 5,
+          "loyalty": 1.0,
+          "defection": 0.013,
+          "stability": 0.988
+        },
+        {
+          "zone": "FR",
+          "cluster": 5,
+          "loyalty": 1.0,
+          "defection": 0.013,
+          "stability": 0.988
+        },
+        {
+          "zone": "PT",
+          "cluster": 5,
+          "loyalty": 1.0,
+          "defection": 0.013,
+          "stability": 0.988
+        }
+      ],
+      "summary": {
+        "min_ari": 0.4236,
+        "max_ari": 0.8685,
+        "mean_ari": 0.6899,
+        "n_reorganised": 3,
+        "n_strata": 24,
+        "market_mode_range": [
+          0.3175,
+          0.5573
+        ]
+      },
+      "n_null": 120
+    },
+    "rq3": {
+      "question": "Does price co-movement follow the physical interconnection topology, and where does it diverge?",
+      "method": "Hop distance from the config topology, Mantel permutation test between correlation distance and hop distance, Mann-Whitney AUC for adjacency discrimination, and border tables scored against the hop-distance decay curve with NTC, mean flow and price-convergence evidence.",
+      "hop_profile": [
+        {
+          "hops": 1,
+          "pairs": 84,
+          "r_levels": 0.815,
+          "r_residual": 0.706,
+          "convergence": 0.155,
+          "mean_spread": 17.8
+        },
+        {
+          "hops": 2,
+          "pairs": 151,
+          "r_levels": 0.698,
+          "r_residual": 0.581,
+          "convergence": 0.063,
+          "mean_spread": 29.1
+        },
+        {
+          "hops": 3,
+          "pairs": 164,
+          "r_levels": 0.594,
+          "r_residual": 0.465,
+          "convergence": 0.034,
+          "mean_spread": 39.1
+        },
+        {
+          "hops": 4,
+          "pairs": 159,
+          "r_levels": 0.552,
+          "r_residual": 0.409,
+          "convergence": 0.02,
+          "mean_spread": 43.7
+        },
+        {
+          "hops": 5,
+          "pairs": 121,
+          "r_levels": 0.497,
+          "r_residual": 0.355,
+          "convergence": 0.01,
+          "mean_spread": 50.5
+        },
+        {
+          "hops": 6,
+          "pairs": 86,
+          "r_levels": 0.417,
+          "r_residual": 0.287,
+          "convergence": 0.006,
+          "mean_spread": 59.1
+        },
+        {
+          "hops": 7,
+          "pairs": 53,
+          "r_levels": 0.322,
+          "r_residual": 0.221,
+          "convergence": 0.003,
+          "mean_spread": 70.9
+        },
+        {
+          "hops": 8,
+          "pairs": 28,
+          "r_levels": 0.212,
+          "r_residual": 0.151,
+          "convergence": 0.001,
+          "mean_spread": 85.7
+        },
+        {
+          "hops": 9,
+          "pairs": 13,
+          "r_levels": 0.145,
+          "r_residual": 0.115,
+          "convergence": 0.001,
+          "mean_spread": 93.2
+        },
+        {
+          "hops": 10,
+          "pairs": 2,
+          "r_levels": 0.095,
+          "r_residual": 0.088,
+          "convergence": 0.0,
+          "mean_spread": 102.4
+        }
+      ],
+      "auc_levels": 0.8709,
+      "auc_residual": 0.8682,
+      "auc_p_value": 1.87e-29,
+      "mantel": {
+        "r": 0.5958,
+        "p_value": 0.0002,
+        "n_permutations": 5000
+      },
+      "adjacent_mean_r": 0.8155,
+      "distant_mean_r": 0.5234,
+      "adjacent_mean_convergence": 0.1546,
+      "ntc_correlation": {
+        "n": 30,
+        "r": 0.3909,
+        "note": "Pearson r between log(1+NTC) and level correlation, over the adjacent borders with a genuine per-border NTC value"
+      },
+      "ntc_coverage": {
+        "borders_raw": 108,
+        "borders_kept": 37,
+        "borders_dropped": 48,
+        "note": "directed NTC values an exporting zone repeats across borders are zone aggregates, not border capacity, and are excluded"
+      },
+      "flow_coverage": {
+        "pairs_total": 177,
+        "pairs_validated": 2,
+        "by_status": {
+          "duplicate_export": 171,
+          "partial": 2,
+          "missing": 4
+        },
+        "note": "ENTSO-E republishes each zone's aggregate export on every one of its borders for most pairs; those are excluded"
+      },
+      "data_caveat": "Mean flow and NTC are shown only for borders where ENTSO-E publishes a genuine per-border value. For most borders it republishes the exporting zone's aggregate on every border, so those figures are omitted rather than reported. Correlation, convergence and spread come from the price panel and are unaffected.",
+      "under_coupled": [
+        {
+          "a": "FI",
+          "b": "NO_4",
+          "hops": 1,
+          "r_levels": 0.3165,
+          "r_residual": 0.1826,
+          "convergence": 0.0183,
+          "mean_spread": 33.33,
+          "ntc_mw": null,
+          "flow_mw": null,
+          "gap_vs_expected": -0.498
+        },
+        {
+          "a": "NO_3",
+          "b": "SE_3",
+          "hops": 1,
+          "r_levels": 0.447,
+          "r_residual": 0.2814,
+          "convergence": 0.0119,
+          "mean_spread": 29.68,
+          "ntc_mw": null,
+          "flow_mw": null,
+          "gap_vs_expected": -0.368
+        },
+        {
+          "a": "NO_1",
+          "b": "NO_3",
+          "hops": 1,
+          "r_levels": 0.4871,
+          "r_residual": 0.3297,
+          "convergence": 0.0118,
+          "mean_spread": 38.02,
+          "ntc_mw": null,
+          "flow_mw": null,
+          "gap_vs_expected": -0.328
+        },
+        {
+          "a": "SE_2",
+          "b": "SE_3",
+          "hops": 1,
+          "r_levels": 0.5587,
+          "r_residual": 0.4539,
+          "convergence": 0.0327,
+          "mean_spread": 30.48,
+          "ntc_mw": null,
+          "flow_mw": null,
+          "gap_vs_expected": -0.256
+        },
+        {
+          "a": "EE",
+          "b": "FI",
+          "hops": 1,
+          "r_levels": 0.5842,
+          "r_residual": 0.4746,
+          "convergence": 0.264,
+          "mean_spread": 42.12,
+          "ntc_mw": null,
+          "flow_mw": null,
+          "gap_vs_expected": -0.231
+        },
+        {
+          "a": "FI",
+          "b": "SE_1",
+          "hops": 1,
+          "r_levels": 0.5845,
+          "r_residual": 0.4797,
+          "convergence": 0.1155,
+          "mean_spread": 24.1,
+          "ntc_mw": null,
+          "flow_mw": null,
+          "gap_vs_expected": -0.23
+        },
+        {
+          "a": "LT",
+          "b": "PL",
+          "hops": 1,
+          "r_levels": 0.6223,
+          "r_residual": 0.5159,
+          "convergence": 0.165,
+          "mean_spread": 39.82,
+          "ntc_mw": null,
+          "flow_mw": null,
+          "gap_vs_expected": -0.193
+        },
+        {
+          "a": "NO_3",
+          "b": "SE_2",
+          "hops": 1,
+          "r_levels": 0.6517,
+          "r_residual": 0.575,
+          "convergence": 0.0118,
+          "mean_spread": 14.65,
+          "ntc_mw": null,
+          "flow_mw": null,
+          "gap_vs_expected": -0.163
+        },
+        {
+          "a": "PL",
+          "b": "SE_4",
+          "hops": 1,
+          "r_levels": 0.6548,
+          "r_residual": 0.6016,
+          "convergence": 0.0038,
+          "mean_spread": 46.97,
+          "ntc_mw": null,
+          "flow_mw": null,
+          "gap_vs_expected": -0.16
+        },
+        {
+          "a": "NL",
+          "b": "NO_2",
+          "hops": 1,
+          "r_levels": 0.6585,
+          "r_residual": 0.631,
+          "convergence": 0.0006,
+          "mean_spread": 30.64,
+          "ntc_mw": 986.4,
+          "flow_mw": null,
+          "gap_vs_expected": -0.156
+        },
+        {
+          "a": "DE_LU",
+          "b": "NO_2",
+          "hops": 1,
+          "r_levels": 0.6608,
+          "r_residual": 0.5323,
+          "convergence": 0.0,
+          "mean_spread": 32.83,
+          "ntc_mw": null,
+          "flow_mw": null,
+          "gap_vs_expected": -0.154
+        },
+        {
+          "a": "NO_4",
+          "b": "SE_1",
+          "hops": 1,
+          "r_levels": 0.6611,
+          "r_residual": 0.4592,
+          "convergence": 0.0217,
+          "mean_spread": 10.25,
+          "ntc_mw": null,
+          "flow_mw": null,
+          "gap_vs_expected": -0.154
+        },
+        {
+          "a": "NO_4",
+          "b": "SE_2",
+          "hops": 1,
+          "r_levels": 0.665,
+          "r_residual": 0.4727,
+          "convergence": 0.0215,
+          "mean_spread": 10.49,
+          "ntc_mw": null,
+          "flow_mw": null,
+          "gap_vs_expected": -0.15
+        },
+        {
+          "a": "NO_2",
+          "b": "NO_5",
+          "hops": 1,
+          "r_levels": 0.6838,
+          "r_residual": 0.7338,
+          "convergence": 0.0244,
+          "mean_spread": 19.79,
+          "ntc_mw": null,
+          "flow_mw": null,
+          "gap_vs_expected": -0.131
+        },
+        {
+          "a": "FR",
+          "b": "IT_NORTH",
+          "hops": 1,
+          "r_levels": 0.6879,
+          "r_residual": 0.4007,
+          "convergence": 0.037,
+          "mean_spread": 54.5,
+          "ntc_mw": null,
+          "flow_mw": null,
+          "gap_vs_expected": -0.127
+        }
+      ],
+      "over_coupled": [
+        {
+          "a": "HR",
+          "b": "RO",
+          "hops": 2,
+          "r_levels": 0.9609,
+          "r_residual": 0.9199,
+          "convergence": 0.092,
+          "mean_spread": 7.31,
+          "ntc_mw": null,
+          "flow_mw": null,
+          "gap_vs_expected": 0.263
+        },
+        {
+          "a": "IT_CSUD",
+          "b": "IT_NORTH",
+          "hops": 2,
+          "r_levels": 0.9601,
+          "r_residual": 0.9152,
+          "convergence": 0.8607,
+          "mean_spread": 1.95,
+          "ntc_mw": null,
+          "flow_mw": null,
+          "gap_vs_expected": 0.262
+        },
+        {
+          "a": "BG",
+          "b": "HU",
+          "hops": 2,
+          "r_levels": 0.9563,
+          "r_residual": 0.9117,
+          "convergence": 0.1161,
+          "mean_spread": 5.97,
+          "ntc_mw": null,
+          "flow_mw": null,
+          "gap_vs_expected": 0.258
+        },
+        {
+          "a": "DK_1",
+          "b": "DK_2",
+          "hops": 2,
+          "r_levels": 0.9543,
+          "r_residual": 0.9347,
+          "convergence": 0.3196,
+          "mean_spread": 6.24,
+          "ntc_mw": null,
+          "flow_mw": null,
+          "gap_vs_expected": 0.256
+        },
+        {
+          "a": "IT_SARD",
+          "b": "IT_SUD",
+          "hops": 2,
+          "r_levels": 0.9527,
+          "r_residual": 0.8819,
+          "convergence": 0.8649,
+          "mean_spread": 2.2,
+          "ntc_mw": null,
+          "flow_mw": null,
+          "gap_vs_expected": 0.255
+        },
+        {
+          "a": "BG",
+          "b": "HR",
+          "hops": 2,
+          "r_levels": 0.9495,
+          "r_residual": 0.9002,
+          "convergence": 0.0869,
+          "mean_spread": 8.65,
+          "ntc_mw": null,
+          "flow_mw": null,
+          "gap_vs_expected": 0.252
+        },
+        {
+          "a": "HR",
+          "b": "SK",
+          "hops": 2,
+          "r_levels": 0.9339,
+          "r_residual": 0.8856,
+          "convergence": 0.0893,
+          "mean_spread": 9.04,
+          "ntc_mw": null,
+          "flow_mw": null,
+          "gap_vs_expected": 0.236
+        },
+        {
+          "a": "IT_CNOR",
+          "b": "IT_SUD",
+          "hops": 2,
+          "r_levels": 0.9334,
+          "r_residual": 0.8495,
+          "convergence": 0.907,
+          "mean_spread": 2.12,
+          "ntc_mw": null,
+          "flow_mw": null,
+          "gap_vs_expected": 0.235
+        },
+        {
+          "a": "RO",
+          "b": "SI",
+          "hops": 2,
+          "r_levels": 0.9325,
+          "r_residual": 0.8695,
+          "convergence": 0.0927,
+          "mean_spread": 9.73,
+          "ntc_mw": null,
+          "flow_mw": null,
+          "gap_vs_expected": 0.235
+        },
+        {
+          "a": "SI",
+          "b": "SK",
+          "hops": 2,
+          "r_levels": 0.9307,
+          "r_residual": 0.8791,
+          "convergence": 0.0884,
+          "mean_spread": 9.38,
+          "ntc_mw": null,
+          "flow_mw": null,
+          "gap_vs_expected": 0.233
+        },
+        {
+          "a": "GR",
+          "b": "RO",
+          "hops": 2,
+          "r_levels": 0.929,
+          "r_residual": 0.8614,
+          "convergence": 0.7111,
+          "mean_spread": 7.61,
+          "ntc_mw": null,
+          "flow_mw": null,
+          "gap_vs_expected": 0.231
+        },
+        {
+          "a": "BG",
+          "b": "SI",
+          "hops": 3,
+          "r_levels": 0.9206,
+          "r_residual": 0.8508,
+          "convergence": 0.0876,
+          "mean_spread": 11.05,
+          "ntc_mw": null,
+          "flow_mw": null,
+          "gap_vs_expected": 0.327
+        },
+        {
+          "a": "IT_NORTH",
+          "b": "IT_SUD",
+          "hops": 3,
+          "r_levels": 0.919,
+          "r_residual": 0.8275,
+          "convergence": 0.8276,
+          "mean_spread": 3.05,
+          "ntc_mw": null,
+          "flow_mw": null,
+          "gap_vs_expected": 0.325
+        },
+        {
+          "a": "CZ",
+          "b": "SI",
+          "hops": 2,
+          "r_levels": 0.9116,
+          "r_residual": 0.8545,
+          "convergence": 0.0861,
+          "mean_spread": 11.2,
+          "ntc_mw": null,
+          "flow_mw": null,
+          "gap_vs_expected": 0.214
+        },
+        {
+          "a": "MK",
+          "b": "RO",
+          "hops": 2,
+          "r_levels": 0.9107,
+          "r_residual": 0.7569,
+          "convergence": 0.0012,
+          "mean_spread": 14.57,
+          "ntc_mw": null,
+          "flow_mw": null,
+          "gap_vs_expected": 0.213
+        }
+      ],
+      "congested_borders": [
+        {
+          "a": "FR",
+          "b": "IT_NORTH",
+          "hops": 1,
+          "r_levels": 0.6879,
+          "r_residual": 0.4007,
+          "convergence": 0.037,
+          "mean_spread": 54.5,
+          "ntc_mw": null,
+          "flow_mw": null,
+          "gap_vs_expected": -0.127
+        },
+        {
+          "a": "PL",
+          "b": "SE_4",
+          "hops": 1,
+          "r_levels": 0.6548,
+          "r_residual": 0.6016,
+          "convergence": 0.0038,
+          "mean_spread": 46.97,
+          "ntc_mw": null,
+          "flow_mw": null,
+          "gap_vs_expected": -0.16
+        },
+        {
+          "a": "CH",
+          "b": "FR",
+          "hops": 1,
+          "r_levels": 0.7187,
+          "r_residual": 0.4773,
+          "convergence": 0.0004,
+          "mean_spread": 42.07,
+          "ntc_mw": 2631.0,
+          "flow_mw": null,
+          "gap_vs_expected": -0.096
+        },
+        {
+          "a": "DK_1",
+          "b": "SE_3",
+          "hops": 1,
+          "r_levels": 0.7089,
+          "r_residual": 0.6881,
+          "convergence": 0.0043,
+          "mean_spread": 38.27,
+          "ntc_mw": null,
+          "flow_mw": null,
+          "gap_vs_expected": -0.106
+        },
+        {
+          "a": "NO_1",
+          "b": "NO_3",
+          "hops": 1,
+          "r_levels": 0.4871,
+          "r_residual": 0.3297,
+          "convergence": 0.0118,
+          "mean_spread": 38.02,
+          "ntc_mw": null,
+          "flow_mw": null,
+          "gap_vs_expected": -0.328
+        },
+        {
+          "a": "DE_LU",
+          "b": "SE_4",
+          "hops": 1,
+          "r_levels": 0.7276,
+          "r_residual": 0.6308,
+          "convergence": 0.0007,
+          "mean_spread": 33.99,
+          "ntc_mw": null,
+          "flow_mw": null,
+          "gap_vs_expected": -0.087
+        },
+        {
+          "a": "FI",
+          "b": "NO_4",
+          "hops": 1,
+          "r_levels": 0.3165,
+          "r_residual": 0.1826,
+          "convergence": 0.0183,
+          "mean_spread": 33.33,
+          "ntc_mw": null,
+          "flow_mw": null,
+          "gap_vs_expected": -0.498
+        },
+        {
+          "a": "DE_LU",
+          "b": "FR",
+          "hops": 1,
+          "r_levels": 0.7074,
+          "r_residual": 0.4894,
+          "convergence": 0.0012,
+          "mean_spread": 32.83,
+          "ntc_mw": null,
+          "flow_mw": null,
+          "gap_vs_expected": -0.108
+        },
+        {
+          "a": "DE_LU",
+          "b": "NO_2",
+          "hops": 1,
+          "r_levels": 0.6608,
+          "r_residual": 0.5323,
+          "convergence": 0.0,
+          "mean_spread": 32.83,
+          "ntc_mw": null,
+          "flow_mw": null,
+          "gap_vs_expected": -0.154
+        },
+        {
+          "a": "NL",
+          "b": "NO_2",
+          "hops": 1,
+          "r_levels": 0.6585,
+          "r_residual": 0.631,
+          "convergence": 0.0006,
+          "mean_spread": 30.64,
+          "ntc_mw": 986.4,
+          "flow_mw": null,
+          "gap_vs_expected": -0.156
+        },
+        {
+          "a": "SE_2",
+          "b": "SE_3",
+          "hops": 1,
+          "r_levels": 0.5587,
+          "r_residual": 0.4539,
+          "convergence": 0.0327,
+          "mean_spread": 30.48,
+          "ntc_mw": null,
+          "flow_mw": null,
+          "gap_vs_expected": -0.256
+        },
+        {
+          "a": "AL",
+          "b": "GR",
+          "hops": 1,
+          "r_levels": 0.7298,
+          "r_residual": 0.4374,
+          "convergence": 0.0008,
+          "mean_spread": 29.68,
+          "ntc_mw": 272.4,
+          "flow_mw": null,
+          "gap_vs_expected": -0.085
+        },
+        {
+          "a": "NO_3",
+          "b": "SE_3",
+          "hops": 1,
+          "r_levels": 0.447,
+          "r_residual": 0.2814,
+          "convergence": 0.0119,
+          "mean_spread": 29.68,
+          "ntc_mw": null,
+          "flow_mw": null,
+          "gap_vs_expected": -0.368
+        },
+        {
+          "a": "NO_2",
+          "b": "SE_3",
+          "hops": 1,
+          "r_levels": 0.7475,
+          "r_residual": 0.7054,
+          "convergence": 0.0131,
+          "mean_spread": 27.77,
+          "ntc_mw": null,
+          "flow_mw": null,
+          "gap_vs_expected": -0.067
+        },
+        {
+          "a": "LT",
+          "b": "SE_4",
+          "hops": 1,
+          "r_levels": 0.726,
+          "r_residual": 0.6102,
+          "convergence": 0.0361,
+          "mean_spread": 27.33,
+          "ntc_mw": null,
+          "flow_mw": null,
+          "gap_vs_expected": -0.089
+        }
+      ],
+      "n_pairs": 903,
+      "n_adjacent_pairs": 84
+    }
   }
 }

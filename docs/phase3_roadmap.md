@@ -31,3 +31,32 @@
 - Scheduled exchanges vs physical flows
 - Frontend scope for Stefan review
 - Interdisciplinary lecture / course logistics (separate from data work)
+
+---
+
+## Phase 4 — RQ1-RQ3 (done, Sep 2026)
+
+Stefan's refocused questions of 9 Sep 2026. Implemented in
+`src/energy_collect/comovement.py`, written up in
+[research_questions.md](research_questions.md), served on three dashboard tabs.
+
+- [x] **RQ1** — eigen-decomposition of the zone correlation matrix; market mode vs
+      cluster modes vs noise bulk; significance from phase-randomised surrogates
+      *and* an AR(1)-adjusted Marchenko-Pastur bound (both return 6 modes)
+- [x] **RQ2** — clustering on the market-mode-removed matrix; ARI per season /
+      hour-block / season x hour cell against a matched permutation null; k chosen
+      on the silhouette curve with a k-sensitivity table
+- [x] **RQ3** — hop-distance decay profile, Mantel test, adjacency AUC, and
+      over/under-coupled border tables with convergence and NTC evidence
+- [x] NTC zone-aggregate detection (the A61 analogue of the A11 duplicate-export
+      problem) — 37 of 108 borders carry a genuine per-border value
+
+### Follow-ups this opened
+
+- [ ] `DK_1 - DK_2` (Great Belt HVDC) missing from `config/zones.yaml` neighbours and
+      from ENTSO-E flow/NTC — it scores as a two-hop pair in RQ3
+- [ ] Per-border capacity from PyPSA-Eur line ratings, to test the capacity
+      hypothesis on all borders rather than 37
+- [ ] Second collection year, to ask whether the 2025 partition is itself stable
+      year to year (RQ2 currently answers persistence *within* one year)
+- [ ] GB remains absent, so the whole GB-continent interface is invisible to RQ1-RQ3

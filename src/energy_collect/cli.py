@@ -20,6 +20,7 @@ from energy_collect.seasonality import run_seasonality_decomposition, run_all_se
 from energy_collect.transfer_entropy import run_transfer_entropy
 from energy_collect.dashboard import build_dashboard_bundle
 from energy_collect.meeting_analyses import DEFAULT_NESTED_ZONES, run_meeting_analyses
+from energy_collect.comovement import run_comovement
 
 app = typer.Typer(help="European energy data collection framework")
 logging.basicConfig(
@@ -342,6 +343,34 @@ def analyze_meeting_cmd(
         f"Grid: {grid['osm_lines']} lines, {grid['osm_substations']} substations, "
         f"{grid['osm_hvdc_links']} HVDC links"
     )
+
+
+@app.command("analyze-comovement")
+def analyze_comovement_cmd(
+    year: int = typer.Option(2025, help="Year"),
+    surrogates: int = typer.Option(500, help="Phase-randomised surrogates for the RQ1 eigenvalue null"),
+    stratum_null: int = typer.Option(120, help="Permutation replications for the RQ2 stratum null"),
+    mantel: int = typer.Option(5000, help="Permutations for the RQ3 Mantel test"),
+    clusters: Optional[int] = typer.Option(None, help="Force cluster count k (default: chosen on the silhouette curve)"),
+) -> None:
+    """Answer RQ1-RQ3: market vs cluster modes, partition stability, topology divergence."""
+    load_dotenv()
+    config = load_config()
+    report = run_comovement(
+        config,
+        year,
+        n_surrogates=surrogates,
+        n_null=stratum_null,
+        n_mantel=mantel,
+        k_clusters=clusters,
+    )
+    typer.echo(f"Written: {report['output_path']}")
+    typer.echo(f"Dashboard JSON: {report['dashboard_path']}")
+    panel = report["panel"]
+    typer.echo(f"Panel: {panel['n_zones']} zones x {panel['hours']} hours")
+    for rq in ("rq1", "rq2", "rq3"):
+        typer.echo("")
+        typer.echo(f"[{rq.upper()}] {report['findings'][rq]}")
 
 
 @app.command("build-dashboard")

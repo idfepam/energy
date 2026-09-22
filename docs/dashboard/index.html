@@ -16,18 +16,31 @@
   </header>
 
   <nav>
-    <button class="tab active" data-tab="map">Map</button>
+    <button class="tab active" data-tab="answers">Answers</button>
+    <button class="tab" data-tab="map">Map</button>
     <button class="tab" data-tab="prices">Prices</button>
     <button class="tab" data-tab="seasonality">Seasonality</button>
     <button class="tab" data-tab="te">Transfer entropy</button>
     <button class="tab" data-tab="mismatch">Price vs flow</button>
     <button class="tab" data-tab="regimes">TE regimes</button>
+    <button class="tab" data-tab="rq1">RQ1 · Modes</button>
+    <button class="tab" data-tab="rq2">RQ2 · Persistence</button>
+    <button class="tab" data-tab="rq3">RQ3 · Topology</button>
     <button class="tab" data-tab="network">Network &amp; grid</button>
     <button class="tab" data-tab="coverage">Data coverage</button>
   </nav>
 
   <main>
-    <section id="panel-map" class="panel active">
+    <section id="panel-answers" class="panel active">
+      <div class="panel-intro">
+        <h2>The three research questions, answered</h2>
+        <p>Day-ahead prices for <strong>43 bidding zones</strong> over <strong>8,401 complete hours of 2025</strong>. Each answer below stands on its own: the finding, what it means, the picture, and where every number came from. The <strong>RQ1</strong>, <strong>RQ2</strong> and <strong>RQ3</strong> tabs hold the full tables.</p>
+      </div>
+      <div id="answers-body"></div>
+      <div id="glossary-answers" class="glossary-host"></div>
+    </section>
+
+    <section id="panel-map" class="panel">
       <div class="panel-intro">
         <h2>Physical grid &amp; price coupling</h2>
         <p>Lines connect <strong>bidding zones</strong> (not just countries). Color and width reflect connection strength — weak (pale) to strong (dark). <strong>All connections</strong> includes pairs below the graph threshold; <strong>Strongest only</strong> focuses on stronger links (price: |r| ≥ 0.80; TE: ≥ minimum on borders). Gradient re-scales per toggle.</p>
@@ -276,6 +289,149 @@
       </table>
       <div id="sources-regimes" class="sources-host"></div>
       <div id="glossary-regimes" class="glossary-host"></div>
+    </section>
+
+    <section id="panel-rq1" class="panel">
+      <div class="panel-intro">
+        <h2>RQ1 — One Europe-wide mode, or many?</h2>
+        <p>How much of European price co-movement is a <strong>single Europe-wide mode</strong>, how much is <strong>cluster-specific</strong>, and how many cluster dimensions are statistically supported? We eigen-decompose the hourly zone correlation matrix and test each eigenvalue against <strong>phase-randomised surrogates</strong> — panels with each zone&rsquo;s own autocorrelation preserved but all cross-zone coupling destroyed.</p>
+      </div>
+      <div id="rq1-answer" class="rq-answer"></div>
+      <div class="stat-row" id="rq1-stats"></div>
+      <p class="chart-label">Variance partition: market mode vs cluster modes vs noise bulk</p>
+      <div class="chart-wrap short">
+        <canvas id="rq1-variance"></canvas>
+      </div>
+      <div class="explain-grid" id="rq1-explain"></div>
+      <p class="chart-label">Eigenvalue spectrum against the surrogate 95% band (eigenvalues above the band carry real structure)</p>
+      <div class="chart-wrap">
+        <canvas id="rq1-spectrum"></canvas>
+      </div>
+      <p class="subheading">What each supported mode is</p>
+      <table id="rq1-modes-table">
+        <thead>
+          <tr>
+            <th>Mode</th>
+            <th>Variance</th>
+            <th>Supported</th>
+            <th>Heaviest loadings</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <div id="glossary-rq1" class="glossary-host"></div>
+    </section>
+
+    <section id="panel-rq2" class="panel">
+      <div class="panel-intro">
+        <h2>RQ2 — Do the clusters survive the calendar?</h2>
+        <p>Do the price clusters <strong>persist across seasons and intraday</strong>, or does the partition reorganise? Each stratum is clustered on its own correlation matrix (market mode removed) and scored against the full-year partition with the <strong>Adjusted Rand Index</strong>. The bar to clear is not ARI = 1: it is a <strong>permutation null of the same sample size</strong>, because a shorter window alone lowers ARI.</p>
+      </div>
+      <div id="rq2-answer" class="rq-answer"></div>
+      <div class="stat-row" id="rq2-stats"></div>
+      <p class="subheading">The full-year partition</p>
+      <table id="rq2-clusters-table">
+        <thead>
+          <tr><th>Bloc</th><th>Zones</th><th>Size</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <p class="chart-label">Partition similarity by stratum — observed ARI against the 5th percentile of the matched null</p>
+      <div class="chart-wrap">
+        <canvas id="rq2-ari"></canvas>
+      </div>
+      <p class="chart-label">Share of variance in the Europe-wide mode, by stratum</p>
+      <div class="chart-wrap">
+        <canvas id="rq2-market"></canvas>
+      </div>
+      <p class="subheading">Every stratum</p>
+      <table id="rq2-strata-table">
+        <thead>
+          <tr>
+            <th>Stratum</th>
+            <th>Hours</th>
+            <th>ARI</th>
+            <th>Null p05</th>
+            <th>Market mode</th>
+            <th>Verdict</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <p class="subheading">Which zones move, and which never do</p>
+      <table id="rq2-stability-table">
+        <thead>
+          <tr><th>Zone</th><th>Bloc</th><th>Stays with its bloc</th><th>Sits with outsiders</th><th>Stability</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <p class="subheading">Sensitivity — does the answer depend on k?</p>
+      <table id="rq2-k-table">
+        <thead>
+          <tr><th>k</th><th>Silhouette</th><th>Mean ARI</th><th>Min ARI</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <div id="glossary-rq2" class="glossary-host"></div>
+    </section>
+
+    <section id="panel-rq3" class="panel">
+      <div class="panel-intro">
+        <h2>RQ3 — Does price follow the wires?</h2>
+        <p>Does price co-movement follow the <strong>physical interconnection topology</strong>, and where does it diverge? We measure correlation against <strong>hop distance</strong> in the interconnection graph, test the whole distance matrix with a <strong>Mantel permutation test</strong>, and then name the borders that break the pattern in each direction.</p>
+      </div>
+      <div id="rq3-answer" class="rq-answer"></div>
+      <div class="stat-row" id="rq3-stats"></div>
+      <p class="chart-label">Price correlation and price convergence by grid hop distance</p>
+      <div class="chart-wrap">
+        <canvas id="rq3-hops"></canvas>
+      </div>
+      <div class="explain-grid" id="rq3-explain"></div>
+      <p class="subheading">Directly connected, weakly coupled — the wire exists, the price does not follow</p>
+      <table id="rq3-under-table">
+        <thead>
+          <tr>
+            <th>Border</th>
+            <th>r (levels)</th>
+            <th>r (shocks)</th>
+            <th>Hours fully converged</th>
+            <th>Mean spread</th>
+            <th>NTC</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <p class="subheading">Not connected, tightly coupled — same bloc, no direct line needed</p>
+      <table id="rq3-over-table">
+        <thead>
+          <tr>
+            <th>Pair</th>
+            <th>Hops</th>
+            <th>r (levels)</th>
+            <th>r (shocks)</th>
+            <th>Hours fully converged</th>
+            <th>Mean spread</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <p class="subheading">Congested corridors — direct border, prices almost never converge</p>
+      <p class="muted">Ranked by mean price spread among borders converging in under 5% of hours. Flow and NTC appear only where ENTSO-E publishes a genuine per-border figure rather than the exporting zone&rsquo;s aggregate.</p>
+      <table id="rq3-congested-table">
+        <thead>
+          <tr>
+            <th>Border</th>
+            <th>Mean spread</th>
+            <th>r (levels)</th>
+            <th>Hours fully converged</th>
+            <th>NTC</th>
+            <th>Mean |MW|</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <div id="rq3-caveat" class="rq-answer"></div>
+      <div id="glossary-rq3" class="glossary-host"></div>
     </section>
 
     <section id="panel-network" class="panel">

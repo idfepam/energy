@@ -6,7 +6,7 @@ Step-by-step guide to what was collected, what it means, and how it was analysed
 
 ## The big picture
 
-**Goal:** Map how European electricity markets depend on each other — through **prices**, **physical flows**, **static grid/plants**, and (new) **directed information flow** (Transfer Entropy).
+**Goal:** Map how European electricity markets depend on each other — through **prices**, **physical flows**, **static grid/plants**, **directed information flow** (Transfer Entropy), and (new) the **co-movement structure** behind Stefan's RQ1–RQ3.
 
 **Supervisor:** Stefan  
 **Data year:** 2025  
@@ -184,7 +184,66 @@ PYTHONPATH=src python3 -m energy_collect.cli build-dashboard --year 2025
 cd docs/dashboard && python3 -m http.server 8765
 ```
 
-Tabs: Map | Prices | Seasonality | Transfer entropy | Data coverage
+Tabs: Map | Prices | Seasonality | Transfer entropy | Price vs flow | TE regimes | RQ1 · Modes | RQ2 · Persistence | RQ3 · Topology | Network & grid | Data coverage
+
+---
+
+## Phase 4 — RQ1-RQ3 co-movement analysis
+
+Stefan's refocused research questions (9 Sep 2026). Full write-up:
+**[research_questions.md](research_questions.md)**. One command produces all three:
+
+```bash
+PYTHONPATH=src python3 -m energy_collect.cli analyze-comovement --year 2025
+```
+
+Code: `src/energy_collect/comovement.py`. Outputs `comovement_2025.json` plus the
+dashboard slice, and three dashboard tabs (**RQ1 · Modes**, **RQ2 · Persistence**,
+**RQ3 · Topology**).
+
+### Panel construction (shared by all three RQs)
+
+From 1 Oct 2025 some TSOs publish a **15-minute** market time unit while others stay
+hourly, so the raw index mixes resolutions. Everything is averaged into **hourly UTC
+buckets** first — 43 zones x 8,401 complete hours. Analyses run on both raw levels
+and deseasonalised residuals; residuals are primary.
+
+### RQ1 — market mode vs cluster modes
+
+Eigen-decomposition of the zone correlation matrix. The hard part is significance:
+prices are autocorrelated (mean AR(1) = 0.83), so 8,401 hours are worth only ~801
+independent observations and a textbook Marchenko-Pastur bound would call almost
+everything significant. Two independent tests are used and agree on **6 modes**:
+
+1. **Phase-randomised surrogates** (500 reps) — each zone keeps its own power
+   spectrum, Fourier phases are randomised, all cross-zone coupling destroyed.
+2. **Marchenko-Pastur** with the AR(1)-adjusted effective sample size.
+
+Result: market mode **47%**, five cluster modes **29%**, noise **24%**. On raw levels
+the market mode reads 59% — the 12-point gap is shared calendar shape.
+
+### RQ2 — partition persistence
+
+Clustering runs on the **market-mode-removed** correlation matrix (modes 2..6), with
+average linkage on `sqrt(2(1-C_group))`. k = 8 chosen on the silhouette curve,
+excluding singleton partitions.
+
+Each stratum (4 seasons, 4 hour blocks, 16 season x hour cells) is scored by
+**Adjusted Rand Index** against the full-year partition — and against a
+**permutation null of the same sample size**, because a shorter window lowers ARI on
+its own. Result: persists everywhere except summer, and specifically summer daylight.
+
+### RQ3 — co-movement vs topology
+
+Hop distance from `zones.yaml`, Mantel permutation test, Mann-Whitney AUC for
+adjacency, and border tables scored against the hop-decay curve.
+
+**Important data note:** ENTSO-E republishes each zone's aggregate export against
+every one of its borders — the same defect `flow_validation` found in A11 flows is
+also present in A61 NTC (FR reports 2,801 MW on BE, DE_LU and IT_NORTH alike). Those
+values are excluded, leaving **37 of 108** NTC borders and **2 of 177** directed flow
+pairs usable. Correlation, convergence and spread come from the price panel and are
+unaffected.
 
 ---
 
@@ -202,6 +261,10 @@ PYTHONPATH=src python3 -m energy_collect.cli merge-static --year 2025
 # Phase 3
 PYTHONPATH=src python3 -m energy_collect.cli decompose-seasonality --year 2025 --all
 PYTHONPATH=src python3 -m energy_collect.cli compute-te --year 2025 --min-te 0.003
+
+# Phase 4 (RQ1-RQ3)
+PYTHONPATH=src python3 -m energy_collect.cli analyze-comovement --year 2025
+
 PYTHONPATH=src python3 -m energy_collect.cli build-dashboard --year 2025
 ```
 
@@ -216,6 +279,12 @@ PYTHONPATH=src python3 -m energy_collect.cli build-dashboard --year 2025
 **Seasonality:** Southern/Balkan zones (GR, MK, RS) show strongest intraday patterns; MOY captures winter/summer price level shifts.
 
 **Transfer entropy:** Strongest cross-border directed coupling includes RS→AT, CH→DE_LU, CH→AT (on deseasonalised residuals).
+
+**RQ1 — co-movement structure:** one Europe-wide mode (47% of variance, all loadings positive) plus **5** statistically supported cluster dimensions (29%); 24% noise. On raw levels the common mode reads 59% — 12 points of that is shared calendar, not shared shocks.
+
+**RQ2 — persistence:** the 8-bloc partition (Balkans+SE, CWE/CEE core, Italy+CH, Baltics, Iberia+FR, Nordic north, North Sea, Nordic south+Atlantic) holds in every season and hour block. Only **summer daylight** reorganises, and there the Europe-wide mode itself drops from 56% (night) to 32%. Iberia and the Baltics never move; DE_LU, AT, PL, SK and IE_SEM sit on the moving boundary.
+
+**RQ3 — topology:** correlation decays monotonically with hop distance (0.82 → 0.10); adjacency AUC 0.87, Mantel r 0.60. A direct line is neither sufficient (FI–NO_4 r=0.32, NO_1–NO_3 converges 1.2% of hours) nor necessary (HR–RO r=0.96 at two hops).
 
 ---
 
@@ -238,6 +307,8 @@ data/raw/static/gem/           # GEM power plants
 docs/dashboard/                # Interactive web UI
 docs/entsoe_2025_report.pdf    # Phase 1–2 report for Stefan
 src/energy_collect/            # All Python modules
+src/energy_collect/comovement.py  # RQ1-RQ3 analysis
+docs/research_questions.md     # RQ1-RQ3 findings
 ```
 
 For field-level column definitions see `docs/data_dictionary.md`.

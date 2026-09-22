@@ -105,7 +105,40 @@
       '</div>',
   };
 
+  const RQ_TERMS = {
+    rq1: [
+      ['Eigenvalue (λ)', 'Variance captured by one independent direction of co-movement. λ/N is that direction\u2019s share of the total.'],
+      ['Market mode', 'The leading eigenvector. When every loading has the same sign it is a genuine Europe-wide factor — all zones move together.'],
+      ['Cluster mode', 'A later supported eigenvector. Loadings change sign, so it separates one group of zones from another.'],
+      ['Noise bulk', 'Eigenvalues inside the surrogate band. Consistent with sampling noise, so no structure is claimed from them.'],
+      ['Phase-randomised surrogate', 'A synthetic panel with each zone\u2019s own power spectrum (hence autocorrelation) preserved but Fourier phases randomised, destroying all cross-zone coupling.'],
+      ['Marchenko–Pastur bound', 'The largest eigenvalue expected from a pure-noise correlation matrix. Applied here with an AR(1)-adjusted effective sample size.'],
+      ['Effective sample size', 'How many independent observations the autocorrelated series are really worth: T(1−ρ)/(1+ρ).'],
+      ['Deseasonalised', 'Hour-of-day, day-of-week, month-of-year and 7-day trend removed. What remains is the shock, not the calendar.'],
+    ],
+    rq2: [
+      ['Adjusted Rand Index (ARI)', 'Agreement between two partitions, corrected for chance. 1 = identical, 0 = no better than random.'],
+      ['Permutation null', 'ARI distribution from random subsets of the same size. A stratum only counts as reorganised if it falls below the null\u2019s 5th percentile.'],
+      ['Stratum', 'A slice of the year: a season, an hour-of-day block, or one season × hour-block cell.'],
+      ['Silhouette', 'How well separated the clusters are (−1 to 1). Used to choose the number of blocs k.'],
+      ['Market-mode share', 'λ1/N inside that stratum — how much of the co-movement is Europe-wide in those hours.'],
+      ['Stays with its bloc', 'How often a zone keeps its full-year neighbours across strata. Low values mark zones that sit on a bloc boundary.'],
+    ],
+    rq3: [
+      ['Hop distance', 'Fewest interconnected borders between two zones in the configured topology. 1 hop = a direct border.'],
+      ['Mantel test', 'Permutation test for correlation between two distance matrices — here price distance against hop distance.'],
+      ['AUC', 'Probability that a randomly chosen directly connected pair is more correlated than a randomly chosen unconnected pair. 0.5 = no signal, 1.0 = perfect.'],
+      ['Price convergence', 'Share of hours where two zones settle at the same price (|Δp| < 0.01 EUR/MWh) — the standard sign that the border is not congested.'],
+      ['NTC', 'Net Transfer Capacity — the megawatts a border may nominally carry (ENTSO-E document A61).'],
+      ['Congested border', 'Capacity binds, so the two sides clear at different prices. High flow with near-zero convergence.'],
+      ['Market coupling', 'The algorithm that clears several bidding zones together, which is why prices can track across zones with no direct line.'],
+    ],
+  };
+
   const PANEL_TERMS = {
+    rq1: RQ_TERMS.rq1,
+    rq2: RQ_TERMS.rq2,
+    rq3: RQ_TERMS.rq3,
     map: [
       ['ENTSO-E', 'European Network of Transmission System Operators for Electricity — publishes transparency data via API.'],
       ['TSO', 'Transmission System Operator — company that runs the high-voltage grid in a country or region.'],

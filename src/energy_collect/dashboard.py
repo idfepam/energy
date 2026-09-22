@@ -100,6 +100,13 @@ def build_dashboard_bundle(config: AppConfig, year: int) -> dict[str, Any]:
     if te is None:
         te = run_transfer_entropy(config, year, use_deseasonalised=True, neighbor_only=False)
 
+    comovement = _load_json(config.data_root / "manifests" / "dashboard" / f"comovement_{year}.json")
+    if comovement is None:
+        from energy_collect.comovement import run_comovement
+
+        full = run_comovement(config, year)
+        comovement = _load_json(Path(full["dashboard_path"]))
+
     graph = _load_json(config.data_root / "manifests" / f"dependency_graph_{year}.json")
     gaps = _load_json(config.data_root / "manifests" / "gaps_report.json")
     map_data = _load_json(config.data_root / "manifests" / "map_leaflet.json")
@@ -226,6 +233,7 @@ def build_dashboard_bundle(config: AppConfig, year: int) -> dict[str, Any]:
         "coverage_gaps": coverage_rows,
         "zone_names": _zone_names(config.zones),
         "meeting": meeting or {},
+        "comovement": comovement or {},
     }
 
     dash_dir = Path(__file__).resolve().parents[2] / "docs" / "dashboard"

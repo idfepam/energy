@@ -83,8 +83,28 @@ data/
 | Price overlays | ENTSO-E (this framework) |
 | US layers (EIA, HIFLD) | Out of scope for EU project |
 
+## Research questions (RQ1–RQ3)
+
+**→ [Short answers with figures and sources](docs/ANSWERS.md)** — start here.
+Full method and tables: [docs/research_questions.md](docs/research_questions.md).
+Interactive: the **Answers** tab on the [dashboard](https://idfepam.github.io/energy/),
+with **RQ1 · Modes**, **RQ2 · Persistence** and **RQ3 · Topology** behind it.
+
+```bash
+PYTHONPATH=src python3 -m energy_collect.cli analyze-comovement --year 2025
+python3 scripts/build_rq_figures.py --year 2025
+```
+
+| | Question | Answer in one line |
+|---|---|---|
+| **RQ1** | One Europe-wide mode, cluster modes, how many supported? | One market mode (47% of variance, all loadings same sign) + **5** supported cluster dimensions (29%); 24% noise. Surrogate null and AR(1)-adjusted Marchenko–Pastur agree on 6 modes. |
+| **RQ2** | Do clusters persist across seasons and intraday? | The 8-bloc partition persists in every season and hour block. Only summer daylight reorganises — and there the Europe-wide mode itself drops from 56% (night) to 32%. |
+| **RQ3** | Does co-movement follow physical topology? | Closely but not exactly (AUC 0.87, Mantel r 0.60). A line is neither sufficient (congested Nordic/HVDC borders) nor necessary (coupled blocs two hops apart). |
+
 ## Documentation
 
+- **[RQ1–RQ3 answers](docs/ANSWERS.md)** — the three answers, each with its figure and the source of every number
+- **[RQ1–RQ3 findings](docs/research_questions.md)** — full method, tables and caveats
 - **[Data dictionary](docs/data_dictionary.md)** — all zone codes, field names, PSR fuel types, units
 - **[ENTSO-E data guide](docs/entsoe_data_guide.md)** — collection strategy and analysis notes
 - **[Status for Stefan](docs/status_for_stefan.md)** — project progress summary
