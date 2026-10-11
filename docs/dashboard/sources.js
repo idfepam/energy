@@ -207,7 +207,7 @@
     opts = opts || {};
     const title = opts.title || spec.title;
     let html =
-      '<details class="data-sources"' + (opts.open === false ? '' : ' open') + '>' +
+      '<details class="data-sources"' + (opts.open ? ' open' : '') + '>' +
       '<summary>Data source &amp; method</summary>' +
       '<div class="data-sources-body">';
 

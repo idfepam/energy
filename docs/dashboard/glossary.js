@@ -80,7 +80,7 @@
         '<strong>Strongest only</strong> = cross-border pairs with TE ≥ minimum threshold. Gradient is re-scaled per toggle. Edges are directed (→).</p>',
     },
     common:
-      '<p class="strength-explain-note"><strong>Gradient color &amp; line width</strong> use min–max normalization over the visible edge set (pale = weakest shown, dark = strongest shown). ' +
+      '<p class="strength-explain-note"><strong>Gradient color &amp; line width</strong> use min–max normalization over the visible edge set (faint = weakest shown, vivid = strongest shown). ' +
       'Sub-threshold pairs appear only in <em>All connections</em>.</p>',
   };
 
@@ -91,7 +91,7 @@
       '<p>On the <strong>Map</strong> tab, the price layer connects zones whose hourly day-ahead prices are strongly correlated over 2025. ' +
       '<strong>Strength = Pearson r</strong> between the two zones’ hourly price series. Only pairs with <strong>|r| ≥ 0.85</strong> appear.</p>' +
       '<p>High correlation here means when wholesale prices rise or fall in one zone, a neighbour tends to move the same way — a sign of market coupling, not necessarily a physical cable. ' +
-      'Line color on the map ranks <strong>|r|</strong> within that layer (pale = weaker coupling among shown pairs, dark = strongest).</p>' +
+      'Line color on the map ranks <strong>|r|</strong> within that layer (faint = weaker coupling among shown pairs, vivid = strongest).</p>' +
       '</div>',
     te:
       '<div class="strength-explain strength-explain-te">' +
@@ -147,7 +147,7 @@
       ['Pearson r', 'Correlation coefficient (−1 to +1). Price layer: strength = r on hourly DA prices; only |r| ≥ 0.85 shown.'],
       ['Strength (flow)', 'Mean absolute hourly border flow in MW (2025 ENTSO-E flows, validated directed edge).'],
       ['Strength (TE)', 'Effective k-NN Rényi TE in bits on deseasonalised prices; cross-border neighbours on map.'],
-      ['Gradient color', 'Pale = weakest, dark = strongest within the selected layer (min–max of raw strength). Line width scales too.'],
+      ['Gradient color', 'Faint = weakest, vivid = strongest within the selected layer (min–max of raw strength). Line width scales too.'],
       ['Strongest only', 'Price: |r| ≥ 0.80 (gradient band; dashed below 0.85). TE: TE ≥ minimum on border pairs. Flow: all validated borders.'],
       ['All connections', 'Every computed pair for that layer, including below-threshold price r and TE (still gradient-colored).'],
       ['OSM', 'OpenStreetMap — underlying grid geometry in PyPSA-Eur static layer (substation lat/lon).'],
@@ -275,7 +275,7 @@
     const el = document.getElementById(containerId);
     if (!el) return;
     let html =
-      '<details class="glossary" open>' +
+      '<details class="glossary">' +
       '<summary>Terms &amp; codes on this page</summary>' +
       '<div class="glossary-terms">' + renderTermList(terms) + '</div>';
     if (zoneCodes && zoneCodes.length) {

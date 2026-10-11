@@ -14,3 +14,6 @@ data/processed/
 data/manifests/
 *.parquet
 .DS_Store
+
+# Local-only dashboard settings (CARTO key)
+docs/dashboard/config.local.js

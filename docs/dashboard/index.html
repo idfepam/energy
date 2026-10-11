@@ -2,37 +2,89 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>ENTSO-E 2025 — Dependency Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>European Energy Dependency Map</title>
+  <meta name="description" content="Data-driven dependency mapping of European energy infrastructure: how 43 European electricity price zones depend on each other, from one year of hourly ENTSO-E data." />
+  <meta name="theme-color" content="#070b16" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%2322d3ee'/%3E%3Cstop offset='1' stop-color='%23a78bfa'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='9' fill='%23070b16'/%3E%3Cpath d='M18 4 8 18h7l-2 10 11-15h-7z' fill='url(%23g)'/%3E%3C/svg%3E" />
+  <script>
+    (function () {
+      var t = null;
+      try { t = localStorage.getItem('dashboard-theme'); } catch (e) {}
+      if (t !== 'light' && t !== 'dark') t = window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+      document.documentElement.dataset.theme = t;
+    })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <header>
-    <h1>European electricity dependency</h1>
-    <p id="subtitle">Loading…</p>
+  <div class="bg-aurora" aria-hidden="true"><i></i><i></i><i></i></div>
+  <div class="bg-grid" aria-hidden="true"></div>
+
+  <header class="topbar">
+    <button class="icon-btn menu-btn" id="menu-btn" aria-label="Open navigation" aria-controls="sidebar" aria-expanded="false">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    </button>
+    <a class="brand" href="#answers" data-goto="answers">
+      <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M13.5 2 5 13.5h6L9.5 22 19 9.5h-6z"/></svg></span>
+      <span class="brand-text"><strong>European Energy Dependency</strong><small id="subtitle">Loading&hellip;</small></span>
+    </a>
+    <span class="topbar-current" id="topbar-current" aria-live="polite">Overview</span>
+    <button class="icon-btn theme-btn" id="theme-btn" aria-label="Toggle light and dark theme">
+      <svg class="i-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      <svg class="i-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+    </button>
   </header>
 
-  <nav>
-    <button class="tab active" data-tab="answers">Answers</button>
-    <button class="tab" data-tab="map">Map</button>
-    <button class="tab" data-tab="prices">Prices</button>
-    <button class="tab" data-tab="seasonality">Seasonality</button>
-    <button class="tab" data-tab="te">Transfer entropy</button>
-    <button class="tab" data-tab="mismatch">Price vs flow</button>
-    <button class="tab" data-tab="regimes">TE regimes</button>
-    <button class="tab" data-tab="rq1">RQ1 · Modes</button>
-    <button class="tab" data-tab="rq2">RQ2 · Persistence</button>
-    <button class="tab" data-tab="rq3">RQ3 · Topology</button>
-    <button class="tab" data-tab="network">Network &amp; grid</button>
-    <button class="tab" data-tab="coverage">Data coverage</button>
-  </nav>
+  <div class="layout">
+    <nav class="sidebar" id="sidebar" aria-label="Dashboard sections">
+        <p class="nav-group">Findings</p>
+        <button class="tab active" id="tab-answers" data-tab="answers" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12l2-2 4 4 8-8 4 4"/></svg><span>Overview</span></button>
+        <button class="tab" id="tab-rq1" data-tab="rq1"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span>RQ1 &middot; Modes</span></button>
+        <button class="tab" id="tab-rq2" data-tab="rq2"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9M12 3v9h9"/></svg><span>RQ2 &middot; Persistence</span></button>
+        <button class="tab" id="tab-rq3" data-tab="rq3"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 6a2 2 0 1 0 0 .01M19 6a2 2 0 1 0 0 .01M12 19a2 2 0 1 0 0 .01M6.5 7.5l4.5 9.5M17.5 7.5L13 17M7 6h10"/></svg><span>RQ3 &middot; Topology</span></button>
+        <p class="nav-group">Explore</p>
+        <button class="tab" id="tab-map" data-tab="map"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14"/></svg><span>Map</span></button>
+        <button class="tab" id="tab-prices" data-tab="prices"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17l5-5 4 4 9-9M15 7h6v6"/></svg><span>Prices</span></button>
+        <button class="tab" id="tab-seasonality" data-tab="seasonality"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v2M12 19v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M3 12h2M19 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8"/></svg><span>Seasonality</span></button>
+        <p class="nav-group">Dependence</p>
+        <button class="tab" id="tab-te" data-tab="te"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h12M12 6l6 6-6 6"/></svg><span>Transfer entropy</span></button>
+        <button class="tab" id="tab-mismatch" data-tab="mismatch"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v16M7 4l-3 3M7 4l3 3M17 20V4M17 20l-3-3M17 20l3-3"/></svg><span>Price vs flow</span></button>
+        <button class="tab" id="tab-regimes" data-tab="regimes"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12c3-6 6-6 9 0s6 6 9 0"/></svg><span>TE regimes</span></button>
+        <p class="nav-group">Infrastructure &amp; data</p>
+        <button class="tab" id="tab-network" data-tab="network"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v6M12 16v6M4.9 4.9l4.2 4.2M14.9 14.9l4.2 4.2M2 12h6M16 12h6M4.9 19.1l4.2-4.2M14.9 9.1l4.2-4.2"/></svg><span>Network &amp; grid</span></button>
+        <button class="tab" id="tab-coverage" data-tab="coverage"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6c0-1.7 3.6-3 8-3s8 1.3 8 3-3.6 3-8 3-8-1.3-8-3zM4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg><span>Data coverage</span></button>
+      <div class="sidebar-foot">
+        <span>Data: ENTSO-E Transparency Platform</span>
+        <span>Basemap &copy; OpenStreetMap, CARTO</span>
+      </div>
+    </nav>
+    <div class="scrim" id="scrim" hidden></div>
 
-  <main>
-    <section id="panel-answers" class="panel active">
-      <div class="panel-intro">
+    <main id="main">
+
+    <section id="panel-answers" class="panel active" aria-labelledby="tab-answers">
+      <div class="hero">
+        <canvas id="hero-net" aria-hidden="true"></canvas>
+        <div class="hero-inner">
+          <span class="eyebrow eyebrow-hero">Interdisciplinary Project in Data Science &middot; ENTSO-E 2025</span>
+          <h1 class="hero-title">Data-Driven Dependency Mapping of <span class="grad-text">European Energy Infrastructure</span></h1>
+          <p class="hero-lead">How Europe&rsquo;s electricity price zones depend on each other: one year of hourly market data, three research questions, and every claim tested against a null model of pure chance.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="#findings" data-scroll="answers-body">Read the findings</a>
+            <a class="btn btn-ghost" href="#map" data-goto="map">Explore the map <span aria-hidden="true">&rarr;</span></a>
+          </div>
+          <div class="kpi-row" id="hero-kpis"></div>
+        </div>
+      </div>
+      <div class="panel-intro" id="findings">
+        <span class="eyebrow">Findings</span>
         <h2>The three research questions, answered</h2>
         <p>Day-ahead prices for <strong>43 bidding zones</strong> over <strong>8,401 complete hours of 2025</strong>. Each answer below stands on its own: the finding, what it means, the picture, and where every number came from. The <strong>RQ1</strong>, <strong>RQ2</strong> and <strong>RQ3</strong> tabs hold the full tables.</p>
       </div>
@@ -40,10 +92,11 @@
       <div id="glossary-answers" class="glossary-host"></div>
     </section>
 
-    <section id="panel-map" class="panel">
+    <section id="panel-map" class="panel" aria-labelledby="tab-map">
       <div class="panel-intro">
+        <span class="eyebrow">Explore</span>
         <h2>Physical grid &amp; price coupling</h2>
-        <p>Lines connect <strong>bidding zones</strong> (not just countries). Color and width reflect connection strength — weak (pale) to strong (dark). <strong>All connections</strong> includes pairs below the graph threshold; <strong>Strongest only</strong> focuses on stronger links (price: |r| ≥ 0.80; TE: ≥ minimum on borders). Gradient re-scales per toggle.</p>
+        <p>Lines connect <strong>bidding zones</strong> (not just countries). Colour intensity and width reflect connection strength, from weak (faint) to strong (vivid). <strong>All connections</strong> includes pairs below the graph threshold; <strong>Strongest only</strong> focuses on stronger links (price: |r| ≥ 0.80; TE: ≥ minimum on borders). Gradient re-scales per toggle.</p>
       </div>
       <div class="map-controls">
         <label class="control-label" for="map-layer-select">Connection type</label>
@@ -58,7 +111,7 @@
         </div>
       </div>
       <div id="map-strength-explain" class="strength-explain-host" aria-live="polite"></div>
-      <div id="map"></div>
+      <div id="leaflet-map"></div>
       <div class="map-gradient-legend" id="map-gradient-legend"></div>
       <div class="legend">
         <span class="legend-item"><i class="swatch node"></i> Bidding zone (ENTSO-E)</span>
@@ -69,8 +122,9 @@
       <div id="glossary-map" class="glossary-host"></div>
     </section>
 
-    <section id="panel-prices" class="panel">
+    <section id="panel-prices" class="panel" aria-labelledby="tab-prices">
       <div class="panel-intro">
+        <span class="eyebrow">Explore</span>
         <h2>Day-ahead electricity prices</h2>
         <p>Monthly average day-ahead price in EUR/MWh from ENTSO-E Transparency Platform. Compare how wholesale prices evolved across major bidding zones through 2025.</p>
       </div>
@@ -78,7 +132,7 @@
       <div class="chart-wrap">
         <canvas id="price-chart"></canvas>
       </div>
-      <table id="price-summary-table">
+      <div class="table-wrap"><table id="price-summary-table">
         <thead>
           <tr>
             <th>Zone</th>
@@ -89,13 +143,14 @@
           </tr>
         </thead>
         <tbody></tbody>
-      </table>
+      </table></div>
       <div id="sources-prices" class="sources-host"></div>
       <div id="glossary-prices" class="glossary-host"></div>
     </section>
 
-    <section id="panel-seasonality" class="panel">
+    <section id="panel-seasonality" class="panel" aria-labelledby="tab-seasonality">
       <div class="panel-intro">
+        <span class="eyebrow">Explore</span>
         <h2>Seasonal patterns in electricity prices</h2>
         <p>Prices repeat at three time scales: <strong>within-day</strong> (morning/evening peaks), <strong>within-week</strong> (weekday vs weekend), and <strong>within-year</strong> (winter vs summer / quarterly levels). We remove these mean profiles step-by-step; the residual series is what we use for transfer entropy.</p>
       </div>
@@ -121,7 +176,7 @@
       </div>
       <p class="subheading">Zones with the strongest intraday pattern</p>
       <p class="hint">HOD / DOW / MOY strength = fraction of remaining variance removed by each seasonal layer. Quarter spread = max(Q) − min(Q) in EUR/MWh.</p>
-      <table id="hod-table">
+      <div class="table-wrap"><table id="hod-table">
         <thead>
           <tr>
             <th>Zone</th>
@@ -133,9 +188,9 @@
           </tr>
         </thead>
         <tbody></tbody>
-      </table>
+      </table></div>
       <p class="subheading">Load seasonality (MW) — strongest quarterly patterns</p>
-      <table id="load-season-table">
+      <div class="table-wrap"><table id="load-season-table">
         <thead>
           <tr>
             <th>Zone</th>
@@ -145,20 +200,21 @@
           </tr>
         </thead>
         <tbody></tbody>
-      </table>
+      </table></div>
       <div id="sources-seasonality" class="sources-host"></div>
       <div id="glossary-seasonality" class="glossary-host"></div>
     </section>
 
-    <section id="panel-te" class="panel">
+    <section id="panel-te" class="panel" aria-labelledby="tab-te">
       <div class="panel-intro">
+        <span class="eyebrow">Dependence</span>
         <h2>Directed price information flow</h2>
         <p>Transfer entropy (TE) measures directed price information flow: does zone A’s past help predict zone B’s <em>next</em> hour beyond B’s own history? Estimated with <strong>k-NN Rényi TE</strong> (Tabachová et al. 2026) on deseasonalised ENTSO-E prices — see <strong>Data source &amp; method</strong> below for k, α, r, l, and shuffle correction.</p>
       </div>
       <div id="te-strength-explain" class="strength-explain-host"></div>
       <div class="stat-row" id="te-stats"></div>
       <p class="subheading">Top cross-border pairs (neighbouring zones only)</p>
-      <table id="te-table">
+      <div class="table-wrap"><table id="te-table">
         <thead>
           <tr>
             <th>Source zone</th>
@@ -169,13 +225,14 @@
           </tr>
         </thead>
         <tbody></tbody>
-      </table>
+      </table></div>
       <div id="sources-te" class="sources-host"></div>
       <div id="glossary-te" class="glossary-host"></div>
     </section>
 
-    <section id="panel-mismatch" class="panel">
+    <section id="panel-mismatch" class="panel" aria-labelledby="tab-mismatch">
       <div class="panel-intro">
+        <span class="eyebrow">Dependence</span>
         <h2>Physical flow vs price coupling</h2>
         <p>Every neighbouring border is classified by mean |MW| (physical flow) against Pearson r (price coupling) and transfer entropy. The point is not the table alone: <strong>wires and prices can disagree</strong>, and each class has a market-design reason.</p>
       </div>
@@ -187,7 +244,7 @@
       </div>
       <div id="fr-es-callout"></div>
       <p class="subheading">High-flow / low-correlation borders</p>
-      <table id="mismatch-highlight-table">
+      <div class="table-wrap"><table id="mismatch-highlight-table">
         <thead>
           <tr>
             <th>Border</th>
@@ -198,9 +255,9 @@
           </tr>
         </thead>
         <tbody></tbody>
-      </table>
+      </table></div>
       <p class="subheading">All neighbouring borders</p>
-      <table id="mismatch-table">
+      <div class="table-wrap"><table id="mismatch-table">
         <thead>
           <tr>
             <th>Border</th>
@@ -211,13 +268,14 @@
           </tr>
         </thead>
         <tbody></tbody>
-      </table>
+      </table></div>
       <div id="sources-mismatch" class="sources-host"></div>
       <div id="glossary-mismatch" class="glossary-host"></div>
     </section>
 
-    <section id="panel-regimes" class="panel">
+    <section id="panel-regimes" class="panel" aria-labelledby="tab-regimes">
       <div class="panel-intro">
+        <span class="eyebrow">Dependence</span>
         <h2>TE reversals and nested time scales</h2>
         <p>Directed TE is re-estimated on hour-of-day, weekday/weekend, season, and month. Line charts compare <strong>A→B vs B→A</strong> and <strong>net TE across pairs</strong>. Nested Year → Month → Week → HOD shows what a yearly average conceals.</p>
       </div>
@@ -253,7 +311,7 @@
         </div>
       </div>
       <p class="subheading">Reversing pairs</p>
-      <table id="reversal-table">
+      <div class="table-wrap"><table id="reversal-table">
         <thead>
           <tr>
             <th>Pair</th>
@@ -263,7 +321,7 @@
           </tr>
         </thead>
         <tbody></tbody>
-      </table>
+      </table></div>
       <p class="subheading">Nested TE vs yearly average</p>
       <p class="hint">X-axis is the time scale, not geography. Each line is one corridor pair (A→B). Week/HOD averages are larger because windows are shorter — read the shape and whether the leader survives averaging.</p>
       <div class="chart-wrap">
@@ -273,7 +331,7 @@
       <div class="chart-wrap chart-wrap-sm">
         <canvas id="nested-hod-line-chart"></canvas>
       </div>
-      <table id="nested-te-table">
+      <div class="table-wrap"><table id="nested-te-table">
         <thead>
           <tr>
             <th>Pair</th>
@@ -286,13 +344,14 @@
           </tr>
         </thead>
         <tbody></tbody>
-      </table>
+      </table></div>
       <div id="sources-regimes" class="sources-host"></div>
       <div id="glossary-regimes" class="glossary-host"></div>
     </section>
 
-    <section id="panel-rq1" class="panel">
+    <section id="panel-rq1" class="panel" aria-labelledby="tab-rq1">
       <div class="panel-intro">
+        <span class="eyebrow">Research question 1</span>
         <h2>RQ1 — One Europe-wide mode, or many?</h2>
         <p>How much of European price co-movement is a <strong>single Europe-wide mode</strong>, how much is <strong>cluster-specific</strong>, and how many cluster dimensions are statistically supported? We eigen-decompose the hourly zone correlation matrix and test each eigenvalue against <strong>phase-randomised surrogates</strong> — panels with each zone&rsquo;s own autocorrelation preserved but all cross-zone coupling destroyed.</p>
       </div>
@@ -308,7 +367,7 @@
         <canvas id="rq1-spectrum"></canvas>
       </div>
       <p class="subheading">What each supported mode is</p>
-      <table id="rq1-modes-table">
+      <div class="table-wrap"><table id="rq1-modes-table">
         <thead>
           <tr>
             <th>Mode</th>
@@ -318,24 +377,25 @@
           </tr>
         </thead>
         <tbody></tbody>
-      </table>
+      </table></div>
       <div id="glossary-rq1" class="glossary-host"></div>
     </section>
 
-    <section id="panel-rq2" class="panel">
+    <section id="panel-rq2" class="panel" aria-labelledby="tab-rq2">
       <div class="panel-intro">
+        <span class="eyebrow">Research question 2</span>
         <h2>RQ2 — Do the clusters survive the calendar?</h2>
         <p>Do the price clusters <strong>persist across seasons and intraday</strong>, or does the partition reorganise? Each stratum is clustered on its own correlation matrix (market mode removed) and scored against the full-year partition with the <strong>Adjusted Rand Index</strong>. The bar to clear is not ARI = 1: it is a <strong>permutation null of the same sample size</strong>, because a shorter window alone lowers ARI.</p>
       </div>
       <div id="rq2-answer" class="rq-answer"></div>
       <div class="stat-row" id="rq2-stats"></div>
       <p class="subheading">The full-year partition</p>
-      <table id="rq2-clusters-table">
+      <div class="table-wrap"><table id="rq2-clusters-table">
         <thead>
           <tr><th>Bloc</th><th>Zones</th><th>Size</th></tr>
         </thead>
         <tbody></tbody>
-      </table>
+      </table></div>
       <p class="chart-label">Partition similarity by stratum — observed ARI against the 5th percentile of the matched null</p>
       <div class="chart-wrap">
         <canvas id="rq2-ari"></canvas>
@@ -345,7 +405,7 @@
         <canvas id="rq2-market"></canvas>
       </div>
       <p class="subheading">Every stratum</p>
-      <table id="rq2-strata-table">
+      <div class="table-wrap"><table id="rq2-strata-table">
         <thead>
           <tr>
             <th>Stratum</th>
@@ -357,26 +417,27 @@
           </tr>
         </thead>
         <tbody></tbody>
-      </table>
+      </table></div>
       <p class="subheading">Which zones move, and which never do</p>
-      <table id="rq2-stability-table">
+      <div class="table-wrap"><table id="rq2-stability-table">
         <thead>
           <tr><th>Zone</th><th>Bloc</th><th>Stays with its bloc</th><th>Sits with outsiders</th><th>Stability</th></tr>
         </thead>
         <tbody></tbody>
-      </table>
+      </table></div>
       <p class="subheading">Sensitivity — does the answer depend on k?</p>
-      <table id="rq2-k-table">
+      <div class="table-wrap"><table id="rq2-k-table">
         <thead>
           <tr><th>k</th><th>Silhouette</th><th>Mean ARI</th><th>Min ARI</th></tr>
         </thead>
         <tbody></tbody>
-      </table>
+      </table></div>
       <div id="glossary-rq2" class="glossary-host"></div>
     </section>
 
-    <section id="panel-rq3" class="panel">
+    <section id="panel-rq3" class="panel" aria-labelledby="tab-rq3">
       <div class="panel-intro">
+        <span class="eyebrow">Research question 3</span>
         <h2>RQ3 — Does price follow the wires?</h2>
         <p>Does price co-movement follow the <strong>physical interconnection topology</strong>, and where does it diverge? We measure correlation against <strong>hop distance</strong> in the interconnection graph, test the whole distance matrix with a <strong>Mantel permutation test</strong>, and then name the borders that break the pattern in each direction.</p>
       </div>
@@ -388,7 +449,7 @@
       </div>
       <div class="explain-grid" id="rq3-explain"></div>
       <p class="subheading">Directly connected, weakly coupled — the wire exists, the price does not follow</p>
-      <table id="rq3-under-table">
+      <div class="table-wrap"><table id="rq3-under-table">
         <thead>
           <tr>
             <th>Border</th>
@@ -400,9 +461,9 @@
           </tr>
         </thead>
         <tbody></tbody>
-      </table>
+      </table></div>
       <p class="subheading">Not connected, tightly coupled — same bloc, no direct line needed</p>
-      <table id="rq3-over-table">
+      <div class="table-wrap"><table id="rq3-over-table">
         <thead>
           <tr>
             <th>Pair</th>
@@ -414,10 +475,10 @@
           </tr>
         </thead>
         <tbody></tbody>
-      </table>
+      </table></div>
       <p class="subheading">Congested corridors — direct border, prices almost never converge</p>
       <p class="muted">Ranked by mean price spread among borders converging in under 5% of hours. Flow and NTC appear only where ENTSO-E publishes a genuine per-border figure rather than the exporting zone&rsquo;s aggregate.</p>
-      <table id="rq3-congested-table">
+      <div class="table-wrap"><table id="rq3-congested-table">
         <thead>
           <tr>
             <th>Border</th>
@@ -429,13 +490,14 @@
           </tr>
         </thead>
         <tbody></tbody>
-      </table>
+      </table></div>
       <div id="rq3-caveat" class="rq-answer"></div>
       <div id="glossary-rq3" class="glossary-host"></div>
     </section>
 
-    <section id="panel-network" class="panel">
+    <section id="panel-network" class="panel" aria-labelledby="tab-network">
       <div class="panel-intro">
+        <span class="eyebrow">Infrastructure</span>
         <h2>Dependency structure and the physical grid</h2>
         <p>Compare which bidding zones are hubs on <strong>price coupling</strong>, <strong>physical flow</strong>, and <strong>transfer entropy</strong>, versus OSM transmission geography and GEM plant capacity. Overlap of top hubs shows where energy and price information concentrate on the same nodes — or not.</p>
       </div>
@@ -457,35 +519,36 @@
       </div>
       <p class="subheading">Top hubs by layer</p>
       <div class="chart-grid">
-        <table id="hub-price-table">
+        <div class="table-wrap"><table id="hub-price-table">
           <thead><tr><th colspan="3">Price coupling</th></tr><tr><th>Zone</th><th>Strength</th><th>Degree</th></tr></thead>
           <tbody></tbody>
-        </table>
-        <table id="hub-flow-table">
+        </table></div>
+        <div class="table-wrap"><table id="hub-flow-table">
           <thead><tr><th colspan="3">Physical flow</th></tr><tr><th>Zone</th><th>Strength</th><th>Degree</th></tr></thead>
           <tbody></tbody>
-        </table>
+        </table></div>
       </div>
-      <table id="hub-te-table">
+      <div class="table-wrap"><table id="hub-te-table">
         <thead><tr><th colspan="3">Transfer entropy</th></tr><tr><th>Zone</th><th>Strength</th><th>Degree</th></tr></thead>
         <tbody></tbody>
-      </table>
+      </table></div>
       <p class="subheading">Voltage mix (OSM AC lines)</p>
-      <table id="voltage-table">
+      <div class="table-wrap"><table id="voltage-table">
         <thead><tr><th>Voltage</th><th>Lines</th></tr></thead>
         <tbody></tbody>
-      </table>
+      </table></div>
       <div id="sources-network" class="sources-host"></div>
       <div id="glossary-network" class="glossary-host"></div>
     </section>
 
-    <section id="panel-coverage" class="panel">
+    <section id="panel-coverage" class="panel" aria-labelledby="tab-coverage">
       <div class="panel-intro">
+        <span class="eyebrow">Data</span>
         <h2>ENTSO-E data availability</h2>
         <p>We target 45 bidding zones from <code>config/zones.yaml</code>. This tab tracks <strong>ENTSO-E</strong> time-series gaps only. Static reference data (PyPSA-Eur OSM grid, GEM plants) is collected separately — see <strong>Data source &amp; method</strong> below.</p>
       </div>
       <div class="stat-row" id="coverage-stats"></div>
-      <table id="gap-table">
+      <div class="table-wrap"><table id="gap-table">
         <thead>
           <tr>
             <th>Dataset</th>
@@ -494,15 +557,28 @@
           </tr>
         </thead>
         <tbody></tbody>
-      </table>
+      </table></div>
       <div id="sources-coverage" class="sources-host"></div>
       <div id="glossary-coverage" class="glossary-host"></div>
     </section>
-  </main>
+      <footer class="site-foot">
+        <div>
+          <strong>Data-Driven Dependency Mapping of European Energy Infrastructure</strong>
+          <span>Serhii Slutu &middot; Interdisciplinary Project in Data Science, Technical University of Vienna &middot; supervised by Stefan Kitzler (Complexity Science Hub) and Bernhard Haslhofer</span>
+        </div>
+        <span class="foot-meta" id="foot-meta"></span>
+      </footer>
+    </main>
+  </div>
 
+  <script src="config.js"></script>
+  <script>
+    if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) document.write('<script src="config.local.js"><\/script>');
+  </script>
   <script src="data.js"></script>
   <script src="glossary.js"></script>
   <script src="sources.js"></script>
   <script src="app.js"></script>
+  <script src="ui.js"></script>
 </body>
 </html>

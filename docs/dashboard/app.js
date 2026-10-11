@@ -15,6 +15,42 @@
     '<div class="zone-cell">' + (G.formatZoneCell ? G.formatZoneCell(code, Z) : '<span class="zone-code">' + code + '</span>') + '</div>';
   const zChartLabel = (code) => code + ' — ' + zLabel(code);
 
+  // --- Theme: colours come from CSS custom properties so light/dark stay in sync ---
+  const cssVar = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  const isDark = () => document.documentElement.dataset.theme !== 'light';
+  const PAL = {
+    blue: '#3b82f6', cyan: '#22d3ee', teal: '#14b8a6', green: '#10b981', violet: '#8b5cf6',
+    rose: '#f43f5e', amber: '#f59e0b', orange: '#fb923c', slate: '#94a3b8',
+  };
+  const GRID = () => cssVar('--chart-grid');
+  const MUTED = () => cssVar('--chart-muted');
+  const MUTED_SOFT = () => cssVar('--chart-muted-soft');
+  const alpha = (hex, a) => hex + Math.round(a * 255).toString(16).padStart(2, '0');
+
+  function applyChartTheme() {
+    if (!window.Chart) return;
+    const d = Chart.defaults;
+    d.font.family = "'Inter', system-ui, sans-serif";
+    d.color = cssVar('--chart-text');
+    d.borderColor = GRID();
+    d.plugins.title.color = cssVar('--text');
+    Object.assign(d.plugins.tooltip, {
+      backgroundColor: cssVar('--tooltip-bg'),
+      titleColor: cssVar('--text'),
+      bodyColor: cssVar('--text-2'),
+      borderColor: cssVar('--border-strong'),
+      borderWidth: 1,
+      padding: 10,
+      cornerRadius: 10,
+      boxPadding: 4,
+    });
+    d.elements.line.borderWidth = 2.25;
+    d.elements.point.hoverRadius = 5;
+    d.elements.bar.borderRadius = 3;
+    d.animation.duration = 650;
+  }
+  applyChartTheme();
+
   function uniqueCodes(codes) {
     return [...new Set(codes.filter(Boolean))];
   }
@@ -40,7 +76,8 @@
     return 'Minimal';
   }
 
-  const chartDefaults = {
+  let chartDefaults;
+  const buildChartDefaults = () => ({
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
@@ -51,11 +88,12 @@
       x: { grid: { display: false }, ticks: { maxRotation: 45, minRotation: 0, font: { size: 11 } } },
       y: {
         title: { display: true, text: 'EUR/MWh', font: { size: 11 } },
-        grid: { color: '#eef2f6' },
+        grid: { color: GRID() },
         ticks: { font: { size: 11 } },
       },
     },
-  };
+  });
+  chartDefaults = buildChartDefaults();
 
   document.getElementById('subtitle').textContent =
     `ENTSO-E ${D.year} · ${D.zones_with_prices || '—'} zones with prices · updated ${new Date(D.generated_at).toLocaleDateString()}`;
@@ -67,37 +105,56 @@
       document.querySelectorAll('.panel').forEach((p) => p.classList.remove('active'));
       btn.classList.add('active');
       document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
-
-      const tab = btn.dataset.tab;
-      if (tab === 'map') {
-        map.invalidateSize();
-        renderMapEdges();
-      }
-      if (tab === 'prices') renderPriceChart();
-      if (tab === 'seasonality') renderSeasonalityCharts();
-      if (tab === 'regimes') {
-        renderNestedTeChart();
-        renderNestedHodChart();
-        renderRegimeLineCharts();
-      }
-      if (tab === 'mismatch') renderMismatchScatter();
-      if (tab === 'network') renderNetworkCharts();
+      renderTab(btn.dataset.tab);
     });
   });
 
+  function renderTab(tab) {
+    if (tab === 'map') {
+      map.invalidateSize();
+      renderMapEdges();
+    }
+    if (tab === 'prices') renderPriceChart();
+    if (tab === 'seasonality') renderSeasonalityCharts();
+    if (tab === 'regimes') {
+      renderNestedTeChart();
+      renderNestedHodChart();
+      renderRegimeLineCharts();
+    }
+    if (tab === 'mismatch') renderMismatchScatter();
+    if (tab === 'network') renderNetworkCharts();
+  }
+
   // --- Map ---
   const MAP_PALETTES = {
-    flow: { weak: [219, 234, 254], strong: [30, 64, 175], label: 'Mean flow (MW)', unit: 'MW' },
-    price: { weak: [254, 243, 199], strong: [194, 65, 12], label: 'Price correlation (r)', unit: 'r' },
-    te: { weak: [237, 233, 254], strong: [109, 40, 217], label: 'Transfer entropy', unit: 'bits' },
+    light: {
+      flow: { weak: [191, 219, 254], strong: [29, 78, 216] },
+      price: { weak: [254, 215, 170], strong: [194, 65, 12] },
+      te: { weak: [221, 214, 254], strong: [109, 40, 217] },
+    },
+    dark: {
+      flow: { weak: [30, 64, 110], strong: [103, 232, 249] },
+      price: { weak: [96, 56, 20], strong: [252, 211, 77] },
+      te: { weak: [62, 40, 110], strong: [216, 180, 254] },
+    },
   };
+  const MAP_LABELS = {
+    flow: { label: 'Mean flow (MW)', unit: 'MW' },
+    price: { label: 'Price correlation (r)', unit: 'r' },
+    te: { label: 'Transfer entropy', unit: 'bits' },
+  };
+
+  function mapPalette(kind) {
+    const set = MAP_PALETTES[isDark() ? 'dark' : 'light'];
+    return Object.assign({}, set[kind] || set.flow, MAP_LABELS[kind] || MAP_LABELS.flow);
+  }
 
   function hexRgb(r, g, b) {
     return '#' + [r, g, b].map((v) => Math.round(v).toString(16).padStart(2, '0')).join('');
   }
 
   function gradientColor(kind, norm) {
-    const p = MAP_PALETTES[kind] || MAP_PALETTES.flow;
+    const p = mapPalette(kind);
     const t = Math.max(0, Math.min(1, norm));
     const r = p.weak[0] + (p.strong[0] - p.weak[0]) * t;
     const g = p.weak[1] + (p.strong[1] - p.weak[1]) * t;
@@ -106,15 +163,24 @@
   }
 
   function gradientCss(kind) {
-    const p = MAP_PALETTES[kind] || MAP_PALETTES.flow;
+    const p = mapPalette(kind);
     return `linear-gradient(90deg, ${hexRgb(...p.weak)}, ${hexRgb(...p.strong)})`;
   }
 
-  const map = L.map('map').setView([54, 15], 4);
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+  // CARTO basemaps need a key; config.js receives it from the CARTO_KEY secret at deploy time.
+  const CARTO_KEY = ((window.DASHBOARD_CONFIG || {}).cartoKey || '').replace('__CARTO_KEY__', '');
+  const tileUrl = () =>
+    'https://{s}.basemaps.cartocdn.com/' + (isDark() ? 'dark_all' : 'light_all') + '/{z}/{x}/{y}{r}.png' +
+    (CARTO_KEY ? '?key=' + encodeURIComponent(CARTO_KEY) : '');
+
+  const map = L.map('leaflet-map', { zoomSnap: 0.5, scrollWheelZoom: false }).setView([54, 15], 4);
+  const baseTiles = L.tileLayer(tileUrl(), {
     maxZoom: 18,
-    attribution: '&copy; OpenStreetMap & CARTO',
+    attribution: '&copy; OpenStreetMap &amp; CARTO',
   }).addTo(map);
+  // Let the page scroll past the map; wheel-zoom only after the user clicks into it.
+  map.on('click', () => map.scrollWheelZoom.enable());
+  map.on('mouseout', () => map.scrollWheelZoom.disable());
 
   const mapLayers = D.map_layers || { nodes: [], layers: {} };
   let mapEdgeMode = 'all';
@@ -144,7 +210,7 @@
 
     const layer = mapLayers.layers[mapEdgeKind];
     const edges = layer ? layer[mapEdgeMode] || [] : [];
-    const palette = MAP_PALETTES[mapEdgeKind];
+    const palette = mapPalette(mapEdgeKind);
 
       edges.forEach((e) => {
       const color = gradientColor(mapEdgeKind, e.norm);
@@ -172,11 +238,11 @@
 
     (mapLayers.nodes || []).forEach((n) => {
       L.circleMarker([n.lat, n.lon], {
-        radius: 5,
-        color: '#1e3a5f',
-        fillColor: '#64748b',
-        fillOpacity: 0.55,
-        weight: 1,
+        radius: 4.5,
+        color: cssVar('--map-node-stroke'),
+        fillColor: cssVar('--map-node-fill'),
+        fillOpacity: 0.9,
+        weight: 1.5,
       })
         .bindTooltip(`<b>${n.id}</b> — ${zLabel(n.id)}`, { sticky: true })
         .addTo(mapNodeGroup);
@@ -256,7 +322,7 @@
 
     const allMonths = [...new Set(zones.flatMap((z) => monthly[z].map((d) => d.month)))].sort();
     const labels = allMonths.map(formatMonth);
-    const colors = ['#2563a8', '#dc2626', '#16a34a', '#9333ea', '#ea580c'];
+    const colors = [PAL.blue, PAL.rose, PAL.green, PAL.violet, PAL.amber];
 
     const datasets = zones.map((z, i) => {
       const byMonth = Object.fromEntries(monthly[z].map((d) => [d.month, d.price]));
@@ -356,8 +422,8 @@
         datasets: [{
           label: zone,
           data,
-          backgroundColor: '#2563a8aa',
-          borderColor: '#2563a8',
+          backgroundColor: alpha(PAL.blue, 0.7),
+          borderColor: PAL.blue,
           borderWidth: 1,
         }],
       },
@@ -399,8 +465,8 @@
         datasets: [{
           label: zone,
           data,
-          borderColor: '#ea580c',
-          backgroundColor: '#ea580c22',
+          borderColor: PAL.amber,
+          backgroundColor: alpha(PAL.amber, 0.14),
           fill: true,
           borderWidth: 2,
           tension: 0.3,
@@ -443,8 +509,8 @@
         datasets: [{
           label: zone,
           data: profile,
-          borderColor: '#2563a8',
-          backgroundColor: '#2563a822',
+          borderColor: PAL.blue,
+          backgroundColor: alpha(PAL.blue, 0.14),
           fill: true,
           borderWidth: 2,
           pointRadius: 2,
@@ -595,11 +661,11 @@
   }
 
   const SCATTER_COLORS = {
-    congested_trade: '#c2410c',
-    paper_coupling: '#2563a8',
-    aligned_strong: '#15803d',
-    informational: '#7c3aed',
-    weak: '#64748b',
+    congested_trade: PAL.orange,
+    paper_coupling: PAL.blue,
+    aligned_strong: PAL.green,
+    informational: PAL.violet,
+    weak: PAL.slate,
   };
   const SCATTER_LABELS = {
     congested_trade: 'Congested trade',
@@ -625,8 +691,8 @@
     const datasets = Object.keys(byClass).map((cls) => ({
       label: SCATTER_LABELS[cls] || cls,
       data: byClass[cls],
-      backgroundColor: SCATTER_COLORS[cls] || '#64748b',
-      borderColor: SCATTER_COLORS[cls] || '#64748b',
+      backgroundColor: SCATTER_COLORS[cls] || PAL.slate,
+      borderColor: SCATTER_COLORS[cls] || PAL.slate,
     }));
     const options = {
       ...chartDefaults,
@@ -651,11 +717,11 @@
           title: { display: true, text: 'Pearson r (hourly day-ahead prices)', font: { size: 11 } },
           min: 0,
           max: 1,
-          grid: { color: '#eef2f6' },
+          grid: { color: GRID() },
         },
         y: {
           title: { display: true, text: 'Mean |physical flow| (MW)', font: { size: 11 } },
-          grid: { color: '#eef2f6' },
+          grid: { color: GRID() },
         },
       },
     };
@@ -689,7 +755,7 @@
   }
 
   const regimeCharts = M.regime_charts || {};
-  const LINE_PALETTE = ['#2563a8', '#dc2626', '#16a34a', '#9333ea', '#ea580c', '#0891b2'];
+  const LINE_PALETTE = [PAL.blue, PAL.rose, PAL.green, PAL.violet, PAL.amber, PAL.teal];
 
   function currentRegimeKey() {
     const sel = document.getElementById('regime-select');
@@ -722,7 +788,7 @@
         x: { grid: { display: false }, ticks: { maxRotation: 45, font: { size: 10 } } },
         y: {
           title: { display: true, text: yText, font: { size: 11 } },
-          grid: { color: '#eef2f6' },
+          grid: { color: GRID() },
         },
       },
     };
@@ -762,8 +828,8 @@
           {
             label: one.a + ' → ' + one.b,
             data: one.te_a_to_b,
-            borderColor: '#2563a8',
-            backgroundColor: '#2563a822',
+            borderColor: PAL.blue,
+            backgroundColor: alpha(PAL.blue, 0.14),
             tension: 0.25,
             spanGaps: true,
             pointRadius: 2,
@@ -771,8 +837,8 @@
           {
             label: one.b + ' → ' + one.a,
             data: one.te_b_to_a,
-            borderColor: '#dc2626',
-            backgroundColor: '#dc262622',
+            borderColor: PAL.rose,
+            backgroundColor: alpha(PAL.rose, 0.14),
             tension: 0.25,
             spanGaps: true,
             pointRadius: 2,
@@ -962,7 +1028,7 @@
       } else {
         charts.substations = new Chart(subCanvas, {
           type: 'bar',
-          data: { labels, datasets: [{ label: 'Substations', data, backgroundColor: '#2563a8aa' }] },
+          data: { labels, datasets: [{ label: 'Substations', data, backgroundColor: alpha(PAL.blue, 0.7) }] },
           options: {
             ...chartDefaults,
             plugins: { ...chartDefaults.plugins, legend: { display: false } },
@@ -986,13 +1052,13 @@
       } else {
         charts.gemType = new Chart(gemCanvas, {
           type: 'bar',
-          data: { labels, datasets: [{ label: 'MW', data, backgroundColor: '#16a34aaa' }] },
+          data: { labels, datasets: [{ label: 'MW', data, backgroundColor: alpha(PAL.green, 0.7) }] },
           options: {
             ...chartDefaults,
             indexAxis: 'y',
             plugins: { ...chartDefaults.plugins, legend: { display: false } },
             scales: {
-              x: { title: { display: true, text: 'MW', font: { size: 11 } }, grid: { color: '#eef2f6' } },
+              x: { title: { display: true, text: 'MW', font: { size: 11 } }, grid: { color: GRID() } },
               y: { grid: { display: false }, ticks: { font: { size: 10 } } },
             },
           },
@@ -1093,9 +1159,9 @@
         data: {
           labels: ['Deseasonalised (shocks)', 'Raw levels'],
           datasets: [
-            { label: 'Europe-wide mode', data: [100 * va.market, 100 * lv.market], backgroundColor: '#2f6fd0' },
-            { label: 'Cluster modes', data: [100 * va.cluster, 100 * lv.cluster], backgroundColor: '#5fa8d3' },
-            { label: 'Noise bulk', data: [100 * va.noise, 100 * lv.noise], backgroundColor: '#d7e1ec' },
+            { label: 'Europe-wide mode', data: [100 * va.market, 100 * lv.market], backgroundColor: PAL.blue },
+            { label: 'Cluster modes', data: [100 * va.cluster, 100 * lv.cluster], backgroundColor: PAL.cyan },
+            { label: 'Noise bulk', data: [100 * va.noise, 100 * lv.noise], backgroundColor: MUTED() },
           ],
         },
         options: {
@@ -1107,7 +1173,7 @@
             tooltip: { callbacks: { label: (c) => c.dataset.label + ': ' + c.parsed.x.toFixed(1) + '%' } },
           },
           scales: {
-            x: { stacked: true, max: 100, title: { display: true, text: '% of total variance' }, grid: { color: '#eef2f6' } },
+            x: { stacked: true, max: 100, title: { display: true, text: '% of total variance' }, grid: { color: GRID() } },
             y: { stacked: true, grid: { display: false } },
           },
         },
@@ -1145,10 +1211,10 @@
               type: 'bar',
               label: 'Observed eigenvalue',
               data: sp.eigenvalues,
-              backgroundColor: sp.eigenvalues.map((v, i) => (i < (sp.k_significant_95 || 0) ? '#2f6fd0' : '#d7e1ec')),
+              backgroundColor: sp.eigenvalues.map((v, i) => (i < (sp.k_significant_95 || 0) ? PAL.blue : MUTED())),
             },
-            { type: 'line', label: 'Surrogate 95th percentile', data: sp.null_q95, borderColor: '#c0392b', borderWidth: 2, pointRadius: 2, fill: false },
-            { type: 'line', label: 'Surrogate mean', data: sp.null_mean, borderColor: '#9aa7b5', borderWidth: 1, borderDash: [4, 3], pointRadius: 0, fill: false },
+            { type: 'line', label: 'Surrogate 95th percentile', data: sp.null_q95, borderColor: PAL.rose, borderWidth: 2, pointRadius: 2, fill: false },
+            { type: 'line', label: 'Surrogate mean', data: sp.null_mean, borderColor: PAL.slate, borderWidth: 1, borderDash: [4, 3], pointRadius: 0, fill: false },
           ],
         },
         options: {
@@ -1160,7 +1226,7 @@
           },
           scales: {
             x: { grid: { display: false } },
-            y: { type: 'logarithmic', title: { display: true, text: 'Eigenvalue (log scale)' }, grid: { color: '#eef2f6' } },
+            y: { type: 'logarithmic', title: { display: true, text: 'Eigenvalue (log scale)' }, grid: { color: GRID() } },
           },
         },
       });
@@ -1221,13 +1287,13 @@
               type: 'bar',
               label: 'Observed ARI',
               data: strata.map((r) => r.ari),
-              backgroundColor: strata.map((r) => (r.reorganised ? '#c0392b' : '#2f6fd0')),
+              backgroundColor: strata.map((r) => (r.reorganised ? PAL.rose : PAL.blue)),
             },
             {
               type: 'line',
               label: 'Null 5th percentile (reorganisation threshold)',
               data: strata.map((r) => r.null_p05),
-              borderColor: '#e67e22',
+              borderColor: PAL.amber,
               borderWidth: 2,
               borderDash: [5, 4],
               pointRadius: 2,
@@ -1237,7 +1303,7 @@
               type: 'line',
               label: 'Null median (expected from sample size alone)',
               data: strata.map((r) => r.null_median),
-              borderColor: '#9aa7b5',
+              borderColor: PAL.slate,
               borderWidth: 1,
               pointRadius: 0,
               fill: false,
@@ -1250,7 +1316,7 @@
           plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, padding: 12, font: { size: 11 } } }, tooltip: { mode: 'index', intersect: false } },
           scales: {
             x: { grid: { display: false }, ticks: { maxRotation: 70, minRotation: 45, font: { size: 9 } } },
-            y: { min: 0, max: 1, title: { display: true, text: 'Adjusted Rand Index' }, grid: { color: '#eef2f6' } },
+            y: { min: 0, max: 1, title: { display: true, text: 'Adjusted Rand Index' }, grid: { color: GRID() } },
           },
         },
       });
@@ -1263,7 +1329,7 @@
         type: 'bar',
         data: {
           labels: strata.map((r) => r.label),
-          datasets: [{ label: 'Share of variance in the Europe-wide mode', data: strata.map((r) => 100 * r.market_mode_share), backgroundColor: '#5fa8d3' }],
+          datasets: [{ label: 'Share of variance in the Europe-wide mode', data: strata.map((r) => 100 * r.market_mode_share), backgroundColor: PAL.cyan }],
         },
         options: {
           responsive: true,
@@ -1271,7 +1337,7 @@
           plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => c.parsed.y.toFixed(1) + '%' } } },
           scales: {
             x: { grid: { display: false }, ticks: { maxRotation: 70, minRotation: 45, font: { size: 9 } } },
-            y: { title: { display: true, text: '% of variance' }, grid: { color: '#eef2f6' } },
+            y: { title: { display: true, text: '% of variance' }, grid: { color: GRID() } },
           },
         },
       });
@@ -1330,9 +1396,9 @@
         data: {
           labels: prof.map((r) => r.hops + (r.hops === 1 ? ' hop' : ' hops')),
           datasets: [
-            { type: 'line', label: 'r — price levels', data: prof.map((r) => r.r_levels), borderColor: '#2f6fd0', backgroundColor: '#2f6fd0', borderWidth: 2, tension: 0.2, yAxisID: 'y' },
-            { type: 'line', label: 'r — deseasonalised shocks', data: prof.map((r) => r.r_residual), borderColor: '#5fa8d3', backgroundColor: '#5fa8d3', borderWidth: 2, borderDash: [5, 4], tension: 0.2, yAxisID: 'y' },
-            { type: 'bar', label: 'Share of hours with identical prices', data: prof.map((r) => r.convergence), backgroundColor: '#e8eef6', yAxisID: 'y' },
+            { type: 'line', label: 'r — price levels', data: prof.map((r) => r.r_levels), borderColor: PAL.blue, backgroundColor: PAL.blue, borderWidth: 2, tension: 0.2, yAxisID: 'y' },
+            { type: 'line', label: 'r — deseasonalised shocks', data: prof.map((r) => r.r_residual), borderColor: PAL.cyan, backgroundColor: PAL.cyan, borderWidth: 2, borderDash: [5, 4], tension: 0.2, yAxisID: 'y' },
+            { type: 'bar', label: 'Share of hours with identical prices', data: prof.map((r) => r.convergence), backgroundColor: MUTED_SOFT(), yAxisID: 'y' },
           ],
         },
         options: {
@@ -1353,7 +1419,7 @@
           },
           scales: {
             x: { grid: { display: false } },
-            y: { min: 0, max: 1, title: { display: true, text: 'Correlation / share of hours' }, grid: { color: '#eef2f6' } },
+            y: { min: 0, max: 1, title: { display: true, text: 'Correlation / share of hours' }, grid: { color: GRID() } },
           },
         },
       });
@@ -1662,6 +1728,25 @@
     const allZoneCodes = uniqueCodes(Object.keys(Z).concat(missingZones));
     G.renderGlossaryPanel('glossary-coverage', G.PANEL_TERMS.coverage, allZoneCodes, Z);
   }
+
+  // --- Theme switching: recolour the basemap, the map edges and every chart ---
+  document.addEventListener('dashboard:themechange', () => {
+    applyChartTheme();
+    chartDefaults = buildChartDefaults();
+    baseTiles.setUrl(tileUrl());
+    renderMapEdges();
+    Object.keys(charts).forEach((k) => {
+      if (charts[k]) {
+        charts[k].destroy();
+        charts[k] = null;
+      }
+    });
+    renderRq1();
+    renderRq2();
+    renderRq3();
+    const active = document.querySelector('.tab.active');
+    if (active) renderTab(active.dataset.tab);
+  });
 
   if (S.renderSourcesPanel) {
     S.renderSourcesPanel('sources-prices', 'prices', D);

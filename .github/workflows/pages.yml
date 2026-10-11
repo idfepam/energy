@@ -23,6 +23,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
+      - name: Inject CARTO basemap key
+        env:
+          CARTO_KEY: ${{ secrets.CARTO_KEY }}
+        run: |
+          if [ -z "$CARTO_KEY" ]; then
+            echo "::warning::CARTO_KEY secret is not set; map tiles will not load"
+          fi
+          sed -i "s|__CARTO_KEY__|${CARTO_KEY}|" docs/dashboard/config.js
       - uses: actions/upload-pages-artifact@v3
         with:
           path: docs/dashboard
