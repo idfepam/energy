@@ -1967,6 +1967,13 @@
 
   // Static parts of the panel: headline numbers, findings and the sortable table.
   (function renderShapeStatic() {
+    if (!PS.zones) {
+      const intro = document.querySelector('#panel-shape .panel-intro');
+      if (intro) {
+        intro.insertAdjacentHTML('afterend', '<div class="empty-state">No price-shape data in this build. Run <code>energy-collect analyze-price-shape --year ' + D.year + '</code>, then <code>build-dashboard</code>.</div>');
+      }
+      return;
+    }
     const sum = PS.summary || {};
     const stats = document.getElementById('shape-stats');
     if (stats && sum.n_zones) {

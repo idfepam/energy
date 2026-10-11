@@ -398,7 +398,7 @@ def build_dashboard_cmd(
     config = load_config()
     bundle = build_dashboard_bundle(config, year)
     typer.echo(f"Dashboard data: {bundle['output_js']}")
-    typer.echo(f"Open: docs/dashboard/index.html (serve with: cd docs/dashboard && python3 -m http.server 8765)")
+    typer.echo("Preview: python3 scripts/serve_dashboard.py  ->  http://localhost:8765/")
 
 
 @app.command("status")
