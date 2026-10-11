@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-11T21:45:24.691877+00:00",
+  "generated_at": "2026-10-11T21:59:49.879759+00:00",
   "year": 2025,
   "target_zones": 45,
   "zones_with_prices": 43,
@@ -21621,35 +21621,35 @@
     {
       "dataset": "day_ahead_prices",
       "label": "Day-ahead prices",
-      "doc": "ENTSO-E A44 (12.1.D) \u2014 day-ahead price, EUR/MWh",
+      "doc": "ENTSO-E A44 (12.1.D): day-ahead price, EUR/MWh",
       "missing": "BA, GB",
       "present": 43
     },
     {
       "dataset": "actual_load",
       "label": "Actual load",
-      "doc": "ENTSO-E A65 (6.1.A) \u2014 total consumption, MW",
+      "doc": "ENTSO-E A65 (6.1.A): total consumption, MW",
       "missing": "GB",
       "present": 44
     },
     {
       "dataset": "generation_actual",
       "label": "Generation (actual)",
-      "doc": "ENTSO-E A75 (16.1.B&C) \u2014 generation by fuel, MW",
+      "doc": "ENTSO-E A75 (16.1.B&C): generation by fuel, MW",
       "missing": "AL, GB",
       "present": 43
     },
     {
       "dataset": "imbalance_prices",
       "label": "Imbalance prices",
-      "doc": "ENTSO-E A85 (17.1.G) \u2014 balancing price, EUR/MWh",
+      "doc": "ENTSO-E A85 (17.1.G): balancing price, EUR/MWh",
       "missing": "BG, DE_LU, GB, IE_SEM, LT",
       "present": 40
     },
     {
       "dataset": "crossborder_flows",
       "label": "Cross-border flows",
-      "doc": "ENTSO-E A11 (12.1.G) \u2014 physical border flow, MW",
+      "doc": "ENTSO-E A11 (12.1.G): physical border flow, MW",
       "missing": "IT_SARD>IT_CSUD, IT_SARD>IT_SICI, IT_SICI>IT_SARD, IT_SICI>IT_SUD",
       "present": 41
     },
@@ -27339,12 +27339,12 @@
       ]
     },
     "interpretations": {
-      "mismatch_mechanism": "Physical MW and wholesale prices answer different questions. Cross-border flow is the energy that actually moved on the wires (Kirchhoff\u2019s laws, loop flows, and whatever capacity TSOs made available). Day-ahead Pearson r asks whether the two bidding zones cleared at similar prices every hour. Those coincide only when the interconnector (or the flow-based domain) is rarely binding. When the cable is full, power still flows at a high MW rate, but extra cheap generation cannot enter the expensive zone \u2014 so prices decouple. That is congested trade, not a data error.",
-      "fr_es": "France\u2013Spain in 2025: about 1,600 MW mean |flow| but Pearson r = 0.70 (below the 0.85 coupling threshold used for the price graph). The Pyrenees link is a known NTC bottleneck (ACER still flags FR\u2013ES). Contrast Spain\u2013Portugal on the same Iberian market: 1,588 MW and r = 0.98 \u2014 aligned strong. So high flow is not enough for price integration; the market has to still have spare capacity in the needed direction. Caveat: ENTSO-E A11 often repeats the same French export total on several FR borders, so FR MW magnitudes should be read as \u2018large\u2019, not as independent meters.",
+      "mismatch_mechanism": "Physical MW and wholesale prices answer different questions. Cross-border flow is the energy that actually moved on the wires (Kirchhoff\u2019s laws, loop flows, and whatever capacity TSOs made available). Day-ahead Pearson r asks whether the two bidding zones cleared at similar prices every hour. Those coincide only when the interconnector (or the flow-based domain) is rarely binding. When the cable is full, power still flows at a high MW rate, but extra cheap generation cannot enter the expensive zone, so prices decouple. That is congested trade, not a data error.",
+      "fr_es": "France\u2013Spain in 2025: about 1,600 MW mean |flow| but Pearson r = 0.70 (below the 0.85 coupling threshold used for the price graph). The Pyrenees link is a known NTC bottleneck (ACER still flags FR\u2013ES). Contrast Spain\u2013Portugal on the same Iberian market: 1,588 MW and r = 0.98: aligned strong. So high flow is not enough for price integration; the market has to still have spare capacity in the needed direction. Caveat: ENTSO-E A11 often repeats the same French export total on several FR borders, so FR MW magnitudes should be read as \u2018large\u2019, not as independent meters.",
       "paper_coupling": "22 of 84 borders are paper coupling: prices move together while bilateral MW is modest (example Lithuania\u2013Latvia, r = 1.00, ~226 MW). In a coupled market, a zone pair can share a price because both trade with the same neighbours (Core flow-based, Baltics, internal Sweden), not because that exact border carries the energy. Pearson r is an integration statistic; MW is a path statistic.",
-      "aligned": "15 borders are aligned strong \u2014 both a large physical corridor and r \u2265 0.85 (examples: ES\u2013PT r = 0.98; BE\u2013NL r = 0.95). These are the cases where the commercial market and the wires are telling the same story.",
+      "aligned": "15 borders are aligned strong: both a large physical corridor and r \u2265 0.85 (examples: ES\u2013PT r = 0.98; BE\u2013NL r = 0.95). These are the cases where the commercial market and the wires are telling the same story.",
       "te_regimes": "A year-average TE arrow is a mixture of many operating regimes. Solar hours, evening peaks, and hydro seasons do not share a leader. Nested windows (year \u2192 month \u2192 week \u2192 hour) inflate raw TE as the sample gets shorter and more homogeneous; compare shapes and leader flips, not absolute bits across scales. Discrete TE on hour-of-day uses lag-1 = yesterday at the same hour.",
-      "te_season": "Season is the cleanest reversal signal (4 pairs, including BG\u2013RS, HR\u2013ME, BG\u2013MK, RO\u2013RS). South-east Europe often switches with winter heating versus autumn hydro/thermal mixes (e.g. Bulgaria leading Serbia in DJF/MAM, Serbia leading in SON). Weekday vs weekend showed no leader flips at the 0.03-bit cutoff \u2014 the workweek changes level more than direction.",
+      "te_season": "Season is the cleanest reversal signal (4 pairs, including BG\u2013RS, HR\u2013ME, BG\u2013MK, RO\u2013RS). South-east Europe often switches with winter heating versus autumn hydro/thermal mixes (e.g. Bulgaria leading Serbia in DJF/MAM, Serbia leading in SON). Weekday vs weekend showed no leader flips at the 0.03-bit cutoff; the workweek changes level more than direction.",
       "te_nested": "On the corridor set FR, ES, PT, DE_LU, AT, CH, IT_NORTH, NO_2, 23 of 28 pairs keep the same yearly leader after averaging monthly TE. Where they disagree, a year graph is hiding a seasonal or hourly reverse. Week-average TE is larger because each week is a short, bursty sample.",
       "counts_sentence": "Of 84 neighbouring borders: 28 congested trade, 22 paper coupling, 15 aligned strong, 19 informational-only."
     },

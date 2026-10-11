@@ -1158,3 +1158,49 @@ details[open] > summary::before { transform: rotate(45deg); }
 }
 .hero-tip span { color: var(--text-3); font-size: 0.74rem; }
 .hero-tip[hidden] { display: none; }
+
+/* ---------- Overview: live RQ figures ---------- */
+.answer-charts {
+  display: grid;
+  gap: 1rem;
+  margin: 1.25rem 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+}
+.answer-charts-rq2 { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); }
+.answer-charts-rq2 .answer-fig-map { grid-column: 2; grid-row: 1 / span 2; }
+.answer-fig {
+  margin: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 0.95rem 1rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface-2);
+}
+.answer-fig figcaption {
+  margin-bottom: 0.55rem;
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+.answer-fig-body { position: relative; min-height: 0; }
+.answer-fig-map .answer-fig-body { flex: 1; min-height: 380px; }
+.answer-map { position: absolute; inset: 0; border-radius: 10px; overflow: hidden; background: var(--map-bg); }
+.answer-fig-note { margin-top: 0.6rem; font-size: 0.78rem; line-height: 1.5; color: var(--text-3); }
+.answer-fig-note .key { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin: 0 0.35rem 0 0.15rem; vertical-align: -1px; }
+.answer-fig-note .key + .key, .answer-fig-note .key ~ .key { margin-left: 0.9rem; }
+.key-green { background: #10b981; }
+.key-red { background: #f43f5e; }
+.bloc-key { display: inline-flex; align-items: center; gap: 0.35rem; margin: 0 0.85rem 0.25rem 0; color: var(--text-2); white-space: nowrap; }
+.bloc-key i { width: 9px; height: 9px; border-radius: 50%; }
+.bloc-hint { display: block; margin-top: 0.3rem; }
+@media (max-width: 860px) {
+  .answer-charts,
+  .answer-charts-rq2 { grid-template-columns: minmax(0, 1fr); }
+  .answer-charts-rq2 .answer-fig-map { grid-column: auto; grid-row: auto; }
+  .answer-fig-map .answer-fig-body { min-height: 340px; }
+}

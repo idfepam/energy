@@ -13,7 +13,7 @@
   const zLabel = (code) => (G.zoneLabel ? G.zoneLabel(code, Z) : code);
   const zCell = (code) =>
     '<div class="zone-cell">' + (G.formatZoneCell ? G.formatZoneCell(code, Z) : '<span class="zone-code">' + code + '</span>') + '</div>';
-  const zChartLabel = (code) => code + ' — ' + zLabel(code);
+  const zChartLabel = (code) => code + ' · ' + zLabel(code);
 
   // --- Theme: colours come from CSS custom properties so light/dark stay in sync ---
   const cssVar = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
@@ -112,6 +112,7 @@
   });
 
   function renderTab(tab) {
+    if (tab === 'answers' && ovMap) ovMap.invalidateSize();
     if (tab === 'map') {
       map.invalidateSize();
       renderMapEdges();
@@ -247,7 +248,7 @@
         fillOpacity: 0.9,
         weight: 1.5,
       })
-        .bindTooltip(`<b>${n.id}</b> — ${zLabel(n.id)}`, { sticky: true })
+        .bindTooltip(`<b>${n.id}</b> ${zLabel(n.id)}`, { sticky: true })
         .addTo(mapNodeGroup);
     });
 
@@ -507,9 +508,9 @@
     const n = seasonState.zones.length;
     const who = n === 1 ? zChartLabel(seasonState.zones[0]) : n + ' zones';
     const hours = [...Array(24).keys()].map((h) => String(h).padStart(2, '0') + ':00');
-    upsertSeasonChart('hod', 'hod-chart', 'hod', 'line', hours, 'Average price by hour of day — ' + who);
-    upsertSeasonChart('quarter', 'quarter-chart', 'quarter', 'bar', (seasonProfiles.quarter || {}).groups || [], 'Quarterly average — ' + who);
-    upsertSeasonChart('monthSeason', 'month-season-chart', 'month', 'line', (seasonProfiles.month || {}).groups || MONTH_NAMES, 'Calendar-month average — ' + who);
+    upsertSeasonChart('hod', 'hod-chart', 'hod', 'line', hours, 'Average price by hour of day, ' + who);
+    upsertSeasonChart('quarter', 'quarter-chart', 'quarter', 'bar', (seasonProfiles.quarter || {}).groups || [], 'Quarterly average, ' + who);
+    upsertSeasonChart('monthSeason', 'month-season-chart', 'month', 'line', (seasonProfiles.month || {}).groups || MONTH_NAMES, 'Calendar-month average, ' + who);
   }
 
   const hodBody = document.querySelector('#hod-table tbody');
@@ -818,7 +819,7 @@
             pointRadius: 2,
           },
         ],
-        'Transfer entropy both ways — ' + one.a + '–' + one.b,
+        'Transfer entropy both ways, ' + one.a + '–' + one.b,
         'TE (bits)'
       );
     }
@@ -960,7 +961,7 @@
   if (overlapEl && structure.hub_overlap) {
     const o = structure.hub_overlap;
     overlapEl.textContent =
-      `Top-${o.top_k || 8} hub overlap — all three layers: ${(o.all_three || []).join(', ') || 'none'}. ` +
+      `Top-${o.top_k || 8} hub overlap. All three layers: ${(o.all_three || []).join(', ') || 'none'}. ` +
       `Flow only: ${(o.flow_only || []).join(', ') || '—'}. TE only: ${(o.te_only || []).join(', ') || '—'}.`;
   }
 
@@ -1090,7 +1091,7 @@
       el.innerHTML = '<h3>' + rq + '</h3><p class="muted">Run: <code>energy-collect analyze-comovement --year 2025</code></p>';
       return;
     }
-    el.innerHTML = '<h3>' + rq + ' — answer</h3><p>' + text + '</p>';
+    el.innerHTML = '<h3>' + rq + ' answer</h3><p>' + text + '</p>';
   }
   function fillRows(selector, rows, emptyCols) {
     const body = document.querySelector(selector + ' tbody');
@@ -1106,6 +1107,315 @@
   }
   function borderCell(a, b) {
     return '<div class="zone-cell"><span class="zone-code">' + a + ' – ' + b + '</span><small>' + zLabel(a) + ' – ' + zLabel(b) + '</small></div>';
+  }
+
+  // Chart definitions shared by the RQ tabs and the overview.
+  function rq1VarianceConfig(va, lv) {
+    return {
+      type: 'bar',
+      data: {
+        labels: ['Deseasonalised (shocks)', 'Raw levels'],
+        datasets: [
+          { label: 'Europe-wide mode', data: [100 * va.market, 100 * lv.market], backgroundColor: PAL.blue },
+          { label: 'Cluster modes', data: [100 * va.cluster, 100 * lv.cluster], backgroundColor: PAL.cyan },
+          { label: 'Noise bulk', data: [100 * va.noise, 100 * lv.noise], backgroundColor: MUTED() },
+        ],
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'bottom', labels: { boxWidth: 12, padding: 12, font: { size: 11 } } },
+          tooltip: { callbacks: { label: (c) => c.dataset.label + ': ' + c.parsed.x.toFixed(1) + '%' } },
+        },
+        scales: {
+          x: { stacked: true, max: 100, title: { display: true, text: '% of total variance' }, grid: { color: GRID() } },
+          y: { stacked: true, grid: { display: false } },
+        },
+      },
+    };
+  }
+
+  function rq1SpectrumConfig(sp) {
+    const labels = sp.eigenvalues.map((_, i) => 'λ' + (i + 1));
+    return {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          {
+            type: 'bar',
+            label: 'Observed eigenvalue',
+            data: sp.eigenvalues,
+            backgroundColor: sp.eigenvalues.map((v, i) => (i < (sp.k_significant_95 || 0) ? PAL.blue : MUTED())),
+          },
+          { type: 'line', label: 'Surrogate 95th percentile', data: sp.null_q95, borderColor: PAL.rose, borderWidth: 2, pointRadius: 2, fill: false },
+          { type: 'line', label: 'Surrogate mean', data: sp.null_mean, borderColor: PAL.slate, borderWidth: 1, borderDash: [4, 3], pointRadius: 0, fill: false },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'bottom', labels: { boxWidth: 12, padding: 12, font: { size: 11 } } },
+          tooltip: { mode: 'index', intersect: false },
+        },
+        scales: {
+          x: { grid: { display: false } },
+          y: { type: 'logarithmic', title: { display: true, text: 'Eigenvalue (log scale)' }, grid: { color: GRID() } },
+        },
+      },
+    };
+  }
+
+  // "Summer (Jun-Aug) / Midday 12-17 UTC" -> "Sum · Mid"; the tooltip keeps the full label.
+  const STRATUM_SHORT = { Winter: 'Win', Spring: 'Spr', Summer: 'Sum', Autumn: 'Aut', Night: 'Night', Morning: 'Morn', Midday: 'Mid', Evening: 'Eve' };
+  const shortStratum = (label) => String(label).split(' / ').map((part) => STRATUM_SHORT[part.split(' ')[0]] || part).join(' · ');
+  const stratumTicks = (strata) => ({
+    maxRotation: 60,
+    minRotation: 45,
+    font: { size: 9.5 },
+    callback: (v, i) => shortStratum(strata[i] ? strata[i].label : ''),
+  });
+
+  function rq2AriConfig(strata) {
+    return {
+      data: {
+        labels: strata.map((r) => r.label),
+        datasets: [
+          {
+            type: 'bar',
+            label: 'Observed ARI',
+            data: strata.map((r) => r.ari),
+            backgroundColor: strata.map((r) => (r.reorganised ? PAL.rose : PAL.blue)),
+          },
+          {
+            type: 'line',
+            label: 'Null 5th percentile (reorganisation threshold)',
+            data: strata.map((r) => r.null_p05),
+            borderColor: PAL.amber,
+            borderWidth: 2,
+            borderDash: [5, 4],
+            pointRadius: 2,
+            fill: false,
+          },
+          {
+            type: 'line',
+            label: 'Null median (expected from sample size alone)',
+            data: strata.map((r) => r.null_median),
+            borderColor: PAL.slate,
+            borderWidth: 1,
+            pointRadius: 0,
+            fill: false,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, padding: 12, font: { size: 11 } } }, tooltip: { mode: 'index', intersect: false } },
+        scales: {
+          x: { grid: { display: false }, ticks: stratumTicks(strata) },
+          y: { min: 0, max: 1, title: { display: true, text: 'Adjusted Rand Index' }, grid: { color: GRID() } },
+        },
+      },
+    };
+  }
+
+  function rq2MarketConfig(strata) {
+    return {
+      type: 'bar',
+      data: {
+        labels: strata.map((r) => r.label),
+        datasets: [{ label: 'Share of variance in the Europe-wide mode', data: strata.map((r) => 100 * r.market_mode_share), backgroundColor: PAL.cyan }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => c.parsed.y.toFixed(1) + '%' } } },
+        scales: {
+          x: { grid: { display: false }, ticks: stratumTicks(strata) },
+          y: { title: { display: true, text: '% of variance' }, grid: { color: GRID() } },
+        },
+      },
+    };
+  }
+
+  function rq3HopsConfig(prof) {
+    return {
+      data: {
+        labels: prof.map((r) => r.hops + (r.hops === 1 ? ' hop' : ' hops')),
+        datasets: [
+          { type: 'line', label: 'r, price levels', data: prof.map((r) => r.r_levels), borderColor: PAL.blue, backgroundColor: PAL.blue, borderWidth: 2, tension: 0.2, yAxisID: 'y' },
+          { type: 'line', label: 'r, deseasonalised shocks', data: prof.map((r) => r.r_residual), borderColor: PAL.cyan, backgroundColor: PAL.cyan, borderWidth: 2, borderDash: [5, 4], tension: 0.2, yAxisID: 'y' },
+          { type: 'bar', label: 'Share of hours with identical prices', data: prof.map((r) => r.convergence), backgroundColor: MUTED_SOFT(), yAxisID: 'y' },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'bottom', labels: { boxWidth: 12, padding: 12, font: { size: 11 } } },
+          tooltip: {
+            mode: 'index',
+            intersect: false,
+            callbacks: {
+              afterBody: (items) => {
+                const row = prof[items[0].dataIndex];
+                return row ? [row.pairs + ' zone pairs', 'mean spread ' + row.mean_spread + ' EUR/MWh'] : [];
+              },
+            },
+          },
+        },
+        scales: {
+          x: { grid: { display: false } },
+          y: { min: 0, max: 1, title: { display: true, text: 'Correlation / share of hours' }, grid: { color: GRID() } },
+        },
+      },
+    };
+  }
+
+  function rq3BreaksConfig(rq3) {
+    const over = (rq3.over_coupled || []).slice(0, 7).map((r) => ({ a: r.a, b: r.b, v: r.r_levels, hops: r.hops, over: true }));
+    const under = (rq3.under_coupled || []).slice(0, 7).map((r) => ({ a: r.a, b: r.b, v: r.r_levels, hops: 1, over: false }));
+    const rows = over.concat(under);
+    const ref = rq3.adjacent_mean_r;
+    return {
+      type: 'bar',
+      data: {
+        labels: rows.map((r) => r.a + '–' + r.b),
+        datasets: [{
+          label: 'Price correlation (levels)',
+          data: rows.map((r) => r.v),
+          backgroundColor: rows.map((r) => alpha(r.over ? PAL.green : PAL.rose, 0.85)),
+          borderRadius: 3,
+        }],
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        layout: { padding: { top: 16 } },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: (c) => {
+                const r = rows[c.dataIndex];
+                return ' r = ' + c.parsed.x.toFixed(2) + (r.over ? ', ' + r.hops + ' hops apart' : ', direct border');
+              },
+            },
+          },
+        },
+        scales: {
+          x: { min: 0, max: 1, title: { display: true, text: 'Price correlation (levels)' }, grid: { color: GRID() } },
+          y: { grid: { display: false }, ticks: { font: { family: "'JetBrains Mono', monospace", size: 10.5 } } },
+        },
+      },
+      plugins: [{
+        id: 'refLine',
+        afterDatasetsDraw(chart) {
+          if (ref == null) return;
+          const { ctx, chartArea, scales } = chart;
+          const x = scales.x.getPixelForValue(ref);
+          ctx.save();
+          ctx.strokeStyle = PAL.blue;
+          ctx.setLineDash([5, 4]);
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.moveTo(x, chartArea.top);
+          ctx.lineTo(x, chartArea.bottom);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.fillStyle = cssVar('--text-2');
+          ctx.font = "11px 'Inter', sans-serif";
+          ctx.textAlign = 'right';
+          ctx.fillText('mean over direct borders ' + ref.toFixed(2), x - 6, chartArea.top - 6);
+          ctx.restore();
+        },
+      }],
+    };
+  }
+
+  // --- Overview: live versions of the RQ figures ---
+  // Approximate centres for zones that share a country centroid in the map data.
+  const ZONE_CENTRES = {
+    NO_1: [60.2, 10.8], NO_2: [58.9, 7.4], NO_3: [63.3, 10.6], NO_4: [68.3, 17.0], NO_5: [60.6, 6.1],
+    SE_1: [66.6, 20.9], SE_2: [63.3, 16.2], SE_3: [59.4, 15.2], SE_4: [56.1, 13.8],
+    DK_1: [56.2, 9.1], DK_2: [55.5, 11.9],
+    IT_NORTH: [45.4, 9.9], IT_CNOR: [43.4, 11.3], IT_CSUD: [41.9, 13.4], IT_SUD: [40.7, 16.1], IT_SICI: [37.5, 14.1], IT_SARD: [40.1, 9.0],
+  };
+  let ovMap = null;
+  let ovTiles = null;
+  let ovLayer = null;
+
+  function renderBlocMap() {
+    const el = document.getElementById('ov-rq2-map');
+    const rq2 = CM.rq2 || {};
+    const clusters = rq2.clusters || [];
+    if (!el || !window.L || !clusters.length) return;
+    const stab = Object.fromEntries((rq2.zone_stability || []).map((r) => [r.zone, r]));
+    const pos = Object.fromEntries(((D.map_layers || {}).nodes || []).map((n) => [n.id, [n.lat, n.lon]]));
+    if (!ovMap) {
+      ovMap = L.map(el, { zoomSnap: 0.25, scrollWheelZoom: false });
+      ovTiles = L.tileLayer(tileUrl(), { maxZoom: 10, attribution: '&copy; OpenStreetMap &amp; CARTO' }).addTo(ovMap);
+      ovLayer = L.layerGroup().addTo(ovMap);
+      ovMap.on('click', () => ovMap.scrollWheelZoom.enable());
+      ovMap.on('mouseout', () => ovMap.scrollWheelZoom.disable());
+    } else {
+      ovTiles.setUrl(tileUrl());
+      ovLayer.clearLayers();
+    }
+    const bounds = [];
+    clusters.forEach((c, i) => {
+      const color = SERIES[i % SERIES.length];
+      c.members.forEach((z) => {
+        const p = ZONE_CENTRES[z] || pos[z];
+        if (!p) return;
+        bounds.push(p);
+        const st = stab[z];
+        const loyal = st ? st.loyalty : 1;
+        L.circleMarker(p, { radius: 7.5, color, weight: 2, fillColor: color, fillOpacity: 0.25 + 0.7 * loyal })
+          .bindTooltip(
+            '<b>' + z + '</b> ' + esc(zLabel(z)) + '<br>' + esc(c.name) +
+              (st ? '<br>Stays with its bloc in ' + pct(st.loyalty, 0) + ' of strata' : ''),
+            { sticky: true }
+          )
+          .addTo(ovLayer);
+      });
+    });
+    if (bounds.length) ovMap.fitBounds(bounds, { padding: [16, 16] });
+    const legend = document.getElementById('ov-rq2-legend');
+    if (legend) {
+      legend.innerHTML =
+        clusters.map((c, i) => '<span class="bloc-key"><i style="background:' + SERIES[i % SERIES.length] + '"></i>' + esc(c.name) + '</span>').join('') +
+        '<span class="bloc-hint">Paler markers leave their bloc more often across strata. Zone positions are approximate centres.</span>';
+    }
+  }
+
+  function renderAnswerCharts() {
+    const rq1 = CM.rq1 || {};
+    const sp = rq1.spectrum || {};
+    const va = (rq1.variance || {}).residual || {};
+    const lv = (rq1.variance || {}).levels || {};
+    const rq2 = CM.rq2 || {};
+    const strata = (rq2.seasons || []).concat(rq2.hour_blocks || [], rq2.season_hour || []);
+    const rq3 = CM.rq3 || {};
+    const prof = rq3.hop_profile || [];
+    const draw = (key, id, ok, config) => {
+      const canvas = document.getElementById(id);
+      if (!canvas || !ok) return;
+      if (charts[key]) charts[key].destroy();
+      charts[key] = new Chart(canvas, config());
+    };
+    draw('ovRq1Variance', 'ov-rq1-variance', va.market !== undefined, () => rq1VarianceConfig(va, lv));
+    draw('ovRq1Spectrum', 'ov-rq1-spectrum', (sp.eigenvalues || []).length, () => rq1SpectrumConfig(sp));
+    draw('ovRq2Ari', 'ov-rq2-ari', strata.length, () => rq2AriConfig(strata));
+    draw('ovRq2Market', 'ov-rq2-market', strata.length, () => rq2MarketConfig(strata));
+    draw('ovRq3Hops', 'ov-rq3-hops', prof.length, () => rq3HopsConfig(prof));
+    draw('ovRq3Breaks', 'ov-rq3-breaks', (rq3.under_coupled || []).length, () => rq3BreaksConfig(rq3));
+    renderBlocMap();
   }
 
   // --- RQ1 ---
@@ -1128,30 +1438,7 @@
     const varCanvas = document.getElementById('rq1-variance');
     if (varCanvas && va.market !== undefined) {
       if (charts.rq1Variance) charts.rq1Variance.destroy();
-      charts.rq1Variance = new Chart(varCanvas, {
-        type: 'bar',
-        data: {
-          labels: ['Deseasonalised (shocks)', 'Raw levels'],
-          datasets: [
-            { label: 'Europe-wide mode', data: [100 * va.market, 100 * lv.market], backgroundColor: PAL.blue },
-            { label: 'Cluster modes', data: [100 * va.cluster, 100 * lv.cluster], backgroundColor: PAL.cyan },
-            { label: 'Noise bulk', data: [100 * va.noise, 100 * lv.noise], backgroundColor: MUTED() },
-          ],
-        },
-        options: {
-          indexAxis: 'y',
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: { position: 'bottom', labels: { boxWidth: 12, padding: 12, font: { size: 11 } } },
-            tooltip: { callbacks: { label: (c) => c.dataset.label + ': ' + c.parsed.x.toFixed(1) + '%' } },
-          },
-          scales: {
-            x: { stacked: true, max: 100, title: { display: true, text: '% of total variance' }, grid: { color: GRID() } },
-            y: { stacked: true, grid: { display: false } },
-          },
-        },
-      });
+      charts.rq1Variance = new Chart(varCanvas, rq1VarianceConfig(va, lv));
     }
 
     const explain = document.getElementById('rq1-explain');
@@ -1168,42 +1455,14 @@
         ) +
         explainCard(
           'Modes are not blocs',
-          'A supported eigenvalue is a direction of cluster structure, not a cluster. ' + (sp.cluster_dimensions ?? '—') + ' dimensions can resolve more than ' + ((sp.cluster_dimensions ?? 0) + 1) + ' groups — RQ2 picks the actual number of blocs on the silhouette curve.'
+          'A supported eigenvalue is a direction of cluster structure, not a cluster. ' + (sp.cluster_dimensions ?? '—') + ' dimensions can resolve more than ' + ((sp.cluster_dimensions ?? 0) + 1) + ' groups; RQ2 picks the actual number of blocs on the silhouette curve.'
         );
     }
 
     const specCanvas = document.getElementById('rq1-spectrum');
     if (specCanvas && (sp.eigenvalues || []).length) {
       if (charts.rq1Spectrum) charts.rq1Spectrum.destroy();
-      const labels = sp.eigenvalues.map((_, i) => 'λ' + (i + 1));
-      charts.rq1Spectrum = new Chart(specCanvas, {
-        type: 'bar',
-        data: {
-          labels,
-          datasets: [
-            {
-              type: 'bar',
-              label: 'Observed eigenvalue',
-              data: sp.eigenvalues,
-              backgroundColor: sp.eigenvalues.map((v, i) => (i < (sp.k_significant_95 || 0) ? PAL.blue : MUTED())),
-            },
-            { type: 'line', label: 'Surrogate 95th percentile', data: sp.null_q95, borderColor: PAL.rose, borderWidth: 2, pointRadius: 2, fill: false },
-            { type: 'line', label: 'Surrogate mean', data: sp.null_mean, borderColor: PAL.slate, borderWidth: 1, borderDash: [4, 3], pointRadius: 0, fill: false },
-          ],
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: { position: 'bottom', labels: { boxWidth: 12, padding: 12, font: { size: 11 } } },
-            tooltip: { mode: 'index', intersect: false },
-          },
-          scales: {
-            x: { grid: { display: false } },
-            y: { type: 'logarithmic', title: { display: true, text: 'Eigenvalue (log scale)' }, grid: { color: GRID() } },
-          },
-        },
-      });
+      charts.rq1Spectrum = new Chart(specCanvas, rq1SpectrumConfig(sp));
     }
 
     const body = fillRows('#rq1-modes-table', rq1.modes, 4);
@@ -1253,68 +1512,13 @@
     const ariCanvas = document.getElementById('rq2-ari');
     if (ariCanvas && strata.length) {
       if (charts.rq2Ari) charts.rq2Ari.destroy();
-      charts.rq2Ari = new Chart(ariCanvas, {
-        data: {
-          labels: strata.map((r) => r.label),
-          datasets: [
-            {
-              type: 'bar',
-              label: 'Observed ARI',
-              data: strata.map((r) => r.ari),
-              backgroundColor: strata.map((r) => (r.reorganised ? PAL.rose : PAL.blue)),
-            },
-            {
-              type: 'line',
-              label: 'Null 5th percentile (reorganisation threshold)',
-              data: strata.map((r) => r.null_p05),
-              borderColor: PAL.amber,
-              borderWidth: 2,
-              borderDash: [5, 4],
-              pointRadius: 2,
-              fill: false,
-            },
-            {
-              type: 'line',
-              label: 'Null median (expected from sample size alone)',
-              data: strata.map((r) => r.null_median),
-              borderColor: PAL.slate,
-              borderWidth: 1,
-              pointRadius: 0,
-              fill: false,
-            },
-          ],
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, padding: 12, font: { size: 11 } } }, tooltip: { mode: 'index', intersect: false } },
-          scales: {
-            x: { grid: { display: false }, ticks: { maxRotation: 70, minRotation: 45, font: { size: 9 } } },
-            y: { min: 0, max: 1, title: { display: true, text: 'Adjusted Rand Index' }, grid: { color: GRID() } },
-          },
-        },
-      });
+      charts.rq2Ari = new Chart(ariCanvas, rq2AriConfig(strata));
     }
 
     const marketCanvas = document.getElementById('rq2-market');
     if (marketCanvas && strata.length) {
       if (charts.rq2Market) charts.rq2Market.destroy();
-      charts.rq2Market = new Chart(marketCanvas, {
-        type: 'bar',
-        data: {
-          labels: strata.map((r) => r.label),
-          datasets: [{ label: 'Share of variance in the Europe-wide mode', data: strata.map((r) => 100 * r.market_mode_share), backgroundColor: PAL.cyan }],
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => c.parsed.y.toFixed(1) + '%' } } },
-          scales: {
-            x: { grid: { display: false }, ticks: { maxRotation: 70, minRotation: 45, font: { size: 9 } } },
-            y: { title: { display: true, text: '% of variance' }, grid: { color: GRID() } },
-          },
-        },
-      });
+      charts.rq2Market = new Chart(marketCanvas, rq2MarketConfig(strata));
     }
 
     const strataBody = fillRows('#rq2-strata-table', strata, 6);
@@ -1366,37 +1570,7 @@
     const prof = rq3.hop_profile || [];
     if (canvas && prof.length) {
       if (charts.rq3Hops) charts.rq3Hops.destroy();
-      charts.rq3Hops = new Chart(canvas, {
-        data: {
-          labels: prof.map((r) => r.hops + (r.hops === 1 ? ' hop' : ' hops')),
-          datasets: [
-            { type: 'line', label: 'r — price levels', data: prof.map((r) => r.r_levels), borderColor: PAL.blue, backgroundColor: PAL.blue, borderWidth: 2, tension: 0.2, yAxisID: 'y' },
-            { type: 'line', label: 'r — deseasonalised shocks', data: prof.map((r) => r.r_residual), borderColor: PAL.cyan, backgroundColor: PAL.cyan, borderWidth: 2, borderDash: [5, 4], tension: 0.2, yAxisID: 'y' },
-            { type: 'bar', label: 'Share of hours with identical prices', data: prof.map((r) => r.convergence), backgroundColor: MUTED_SOFT(), yAxisID: 'y' },
-          ],
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: { position: 'bottom', labels: { boxWidth: 12, padding: 12, font: { size: 11 } } },
-            tooltip: {
-              mode: 'index',
-              intersect: false,
-              callbacks: {
-                afterBody: (items) => {
-                  const row = prof[items[0].dataIndex];
-                  return row ? [row.pairs + ' zone pairs', 'mean spread ' + row.mean_spread + ' EUR/MWh'] : [];
-                },
-              },
-            },
-          },
-          scales: {
-            x: { grid: { display: false } },
-            y: { min: 0, max: 1, title: { display: true, text: 'Correlation / share of hours' }, grid: { color: GRID() } },
-          },
-        },
-      });
+      charts.rq3Hops = new Chart(canvas, rq3HopsConfig(prof));
     }
 
     const explain = document.getElementById('rq3-explain');
@@ -1405,14 +1579,14 @@
       explain.innerHTML =
         explainCard(
           'Topology explains most of it',
-          'Correlation falls monotonically with every extra hop and adjacency is recovered at AUC ' + num(rq3.auc_levels) + ' — close to but short of perfect. The Mantel test confirms it for the whole matrix at once (r = ' + num((rq3.mantel || {}).r) + ', p = ' + num((rq3.mantel || {}).p_value, 4) + ' over ' + ((rq3.mantel || {}).n_permutations || 0) + ' permutations).'
+          'Correlation falls monotonically with every extra hop and adjacency is recovered at AUC ' + num(rq3.auc_levels) + ', close to but short of perfect. The Mantel test confirms it for the whole matrix at once (r = ' + num((rq3.mantel || {}).r) + ', p = ' + num((rq3.mantel || {}).p_value, 4) + ' over ' + ((rq3.mantel || {}).n_permutations || 0) + ' permutations).'
         ) +
         explainCard(
-          'Where it breaks — the wire without the price',
+          'Where it breaks: the wire without the price',
           'Internal Nordic borders and HVDC links carry power but their prices almost never converge: they are congested nearly all the time, so each side keeps its own price. A direct line is necessary but not sufficient for coupling.'
         ) +
         explainCard(
-          'Where it breaks — the price without the wire',
+          'Where it breaks: the price without the wire',
           'Zones two or more hops apart inside one coupled bloc move together almost perfectly. Market coupling clears the whole region at once, so prices propagate across intermediate zones without any dedicated line.'
         ) +
         explainCard(
@@ -1421,7 +1595,7 @@
         ) +
         explainCard(
           'Capacity is only part of the story',
-          'Across the ' + (ntc.n ?? '—') + ' borders with a genuine per-border NTC, log capacity correlates r = ' + num(ntc.r) + ' with price coupling — a real but moderate link. Bigger borders do couple more, yet what finally separates a coupled border from a congested one is how often the capacity binds and which market-coupling region the two zones sit in.'
+          'Across the ' + (ntc.n ?? '—') + ' borders with a genuine per-border NTC, log capacity correlates r = ' + num(ntc.r) + ' with price coupling, a real but moderate link. Bigger borders do couple more, yet what finally separates a coupled border from a congested one is how often the capacity binds and which market-coupling region the two zones sit in.'
         );
     }
 
@@ -1496,11 +1670,15 @@
         '<h3 class="answer-q"><span class="answer-tag">' + id + '</span>' + question + '</h3>' +
         '<div class="answer-headline">' + headline + '</div>' +
         '<div class="answer-body">' + body + '</div>' +
-        '<div class="answer-figures">' +
+        '<div class="answer-charts answer-charts-' + id.toLowerCase() + '">' +
           figures.map((fg) =>
-            '<figure><a href="' + fg.src + '" target="_blank" rel="noopener">' +
-            '<img src="' + fg.src + '" alt="' + fg.alt + '" loading="lazy" /></a>' +
-            '<figcaption>' + fg.alt + ' — click to open full size</figcaption></figure>'
+            '<figure class="answer-fig' + (fg.map ? ' answer-fig-map' : '') + '">' +
+            '<figcaption>' + fg.title + '</figcaption>' +
+            '<div class="answer-fig-body"' + (fg.height ? ' style="height:' + fg.height + 'px"' : '') + '>' +
+            (fg.map ? '<div id="' + fg.id + '" class="answer-map"></div>' : '<canvas id="' + fg.id + '"></canvas>') +
+            '</div>' +
+            (fg.note || fg.noteId ? '<div class="answer-fig-note"' + (fg.noteId ? ' id="' + fg.noteId + '"' : '') + '>' + fg.note + '</div>' : '') +
+            '</figure>'
           ).join('') +
         '</div>' +
         '<details class="answer-sources"><summary>Where these numbers came from</summary><table>' +
@@ -1528,16 +1706,16 @@
           'The ' + (sp.cluster_dimensions ?? '—') + ' cluster dimensions are Nordic, Italian, Iberian, Baltic and an Iberian–Baltic contrast.</p>' +
         '<p>On <em>raw</em> price levels the common mode instead reads ' + pct(lv.market, 0) + '. That extra ' +
           Math.round(100 * (lv.market - va.market)) + ' percentage points is the shared European daily and seasonal ' +
-          '<strong>calendar</strong>, not shared market shocks — which is why every number here is computed on deseasonalised prices.</p>',
+          '<strong>calendar</strong>, not shared market shocks. That is why every number here is computed on deseasonalised prices.</p>',
         [
-          { src: 'figures/rq1_modes.png', alt: 'Variance split and eigenvalue spectrum against the surrogate band' },
-          { src: 'figures/rq1_loadings.png', alt: 'Eigenvector loadings of the six supported modes' },
+          { id: 'ov-rq1-variance', title: 'How the co-movement splits', height: 300, note: 'Deseasonalised shocks against raw price levels. The gap between the two bars is the shared calendar.' },
+          { id: 'ov-rq1-spectrum', title: 'Six modes clear the surrogate band', height: 300, note: 'Bars above the red line carry real structure; the rest is consistent with noise.' },
         ],
         [
           ['Data', common],
           ['Method', 'Eigen-decomposition of the ' + (sp.zones || 43) + '×' + (sp.zones || 43) + ' Pearson correlation matrix. ' +
             pct(va.market, 0) + ' = λ1/N = ' + num(sp.eigenvalues ? sp.eigenvalues[0] : null) + '/' + (sp.zones || 43) + '.'],
-          ['Significance', '<strong>' + (sp.n_surrogates || 0) + ' phase-randomised surrogates</strong> — each keeps a zone’s own power spectrum (so its autocorrelation) and randomises Fourier phases, destroying all cross-zone coupling. A mode counts only if it beats the 95th percentile of its own rank in that null. λ1…λ' +
+          ['Significance', '<strong>' + (sp.n_surrogates || 0) + ' phase-randomised surrogates</strong>. Each keeps a zone’s own power spectrum (so its autocorrelation) and randomises Fourier phases, destroying all cross-zone coupling. A mode counts only if it beats the 95th percentile of its own rank in that null. λ1…λ' +
             (sp.k_significant_95 || 0) + ' do; λ' + ((sp.k_significant_95 || 0) + 1) + ' = ' +
             num(sp.eigenvalues ? sp.eigenvalues[sp.k_significant_95] : null) + ' against a band of ' +
             num(sp.null_q95 ? sp.null_q95[sp.k_significant_95] : null) + ' does not.'],
@@ -1552,7 +1730,7 @@
       section(
         'RQ2',
         'Do the price clusters persist across seasons and intraday, or does the partition reorganise?',
-        '<strong>They persist. The ' + (rq2.k || 8) + ' blocs survive every season and every time of day. The only genuine reorganisation is summer daylight — ' +
+        '<strong>They persist. The ' + (rq2.k || 8) + ' blocs survive every season and every time of day. The only genuine reorganisation is summer daylight: ' +
           reorg.length + ' of ' + strata.length + ' strata, all of them summer.</strong>',
         '<p>What changes with the clock is not <em>who is in which bloc</em> but <em>how strong the Europe-wide mode is</em>: it runs from <strong>' +
           pct(strongest.market_mode_share, 0) + ' in ' + (strongest.label || '') + '</strong> down to <strong>' +
@@ -1561,10 +1739,11 @@
         '<p>The blocs are ' + (rq2.clusters || []).map((c) => '<strong>' + c.name + '</strong>').join(', ') +
           '. Iberia and the Baltics never move. The least stable zones are ' +
           (rq2.zone_stability || []).slice(0, 5).map((z) => z.zone).join(', ') +
-          ' — every one of them sits on a bloc boundary rather than inside one.</p>',
+          '. Every one of them sits on a bloc boundary rather than inside one.</p>',
         [
-          { src: 'figures/rq2_persistence.png', alt: 'ARI per stratum against the matched null, and the strength of the common mode' },
-          { src: 'figures/rq2_blocs.png', alt: 'The eight price blocs on the map' },
+          { id: 'ov-rq2-ari', title: 'The partition holds everywhere except summer daylight', height: 270, note: 'Red bars fall below the null of the same sample size and count as reorganised.' },
+          { id: 'ov-rq2-market', title: 'What moves with the clock is the common mode', height: 230 },
+          { id: 'ov-rq2-map', title: 'The eight price blocs of 2025', map: true, noteId: 'ov-rq2-legend', note: '' },
         ],
         [
           ['Data', 'The same deseasonalised hourly price panel as RQ1.'],
@@ -1574,7 +1753,7 @@
           ['Comparison', '<strong>Adjusted Rand Index</strong> against the full-year partition, for ' +
             (rq2.seasons || []).length + ' seasons, ' + (rq2.hour_blocks || []).length + ' six-hour blocks and ' +
             (rq2.season_hour || []).length + ' season × hour cells.'],
-          ['The bar to clear', 'A <strong>permutation null of identical sample size</strong> — random days for a season, random hours-of-day for an hour block, both for a cell, ' +
+          ['The bar to clear', 'A <strong>permutation null of identical sample size</strong>: random days for a season, random hours-of-day for an hour block, both for a cell, ' +
             (rq2.n_null || 0) + ' replications each. This matters: a quarter of the year gives ARI ≈ ' +
             num((rq2.seasons || [{}])[0].null_median) + ' even when nothing reorganised, so raw ARI alone would be misread. A stratum counts as reorganised only below the null’s 5th percentile.'],
           ['Result', 'ARI ' + num((rq2.summary || {}).min_ari) + '–' + num((rq2.summary || {}).max_ari) + ' across ' +
@@ -1591,7 +1770,7 @@
       section(
         'RQ3',
         'Does price co-movement follow the physical interconnection topology, and where does it diverge?',
-        '<strong>Yes, closely — but a transmission line turns out to be neither sufficient nor necessary for prices to move together.</strong>',
+        '<strong>Yes, closely. But a transmission line turns out to be neither sufficient nor necessary for prices to move together.</strong>',
         '<p>Correlation falls monotonically with every extra hop through the grid, from <strong>' +
           num(prof.length ? prof[0].r_levels : null) + ' at one hop to ' +
           num(prof.length ? prof[prof.length - 1].r_levels : null) + ' at ' +
@@ -1599,20 +1778,23 @@
           num(rq3.auc_levels) + '</strong> and the Mantel correlation between price distance and hop distance is <strong>' +
           num((rq3.mantel || {}).r) + '</strong> (p = ' + num((rq3.mantel || {}).p_value, 4) + '). Topology explains most of the picture.</p>' +
         '<p>The exceptions run in both directions and are systematic. <strong>Direct border, weak coupling:</strong> ' +
-          pairList(under) + ' — internal Nordic borders where congestion binds essentially all the time (' +
+          pairList(under) + '. These are internal Nordic borders where congestion binds essentially all the time (' +
           under[0].a + '–' + under[0].b + ' settles at the same price in only ' + pct(under[0].convergence) +
           ' of hours). <strong>No direct border, strong coupling:</strong> ' + pairList(over) +
-          ', all two hops apart — zones inside one coupled bloc, where the market clears the whole region at once.</p>' +
+          ', all two hops apart: zones inside one coupled bloc, where the market clears the whole region at once.</p>' +
         '<p>Border capacity explains part of it but not most: over the ' + ((rq3.ntc_correlation || {}).n ?? '—') +
           ' borders with a trustworthy per-border capacity figure, log NTC correlates <strong>r = ' +
           num((rq3.ntc_correlation || {}).r) + '</strong> with price coupling.</p>' +
-        '<div class="answer-caveat"><strong>One data caveat, stated up front.</strong> ENTSO-E republishes each zone’s <em>aggregate</em> export against every one of its borders. The project’s flow validation already found this for physical flows (A11); the same defect is in the capacity data (A61) — France publishes 2,801 MW identically on BE, DE_LU and IT_NORTH. Those are zone totals, not border figures, and using them would manufacture a result, so they are excluded: <strong>' +
+        '<div class="answer-caveat"><strong>One data caveat, stated up front.</strong> ENTSO-E republishes each zone’s <em>aggregate</em> export against every one of its borders. The project’s flow validation already found this for physical flows (A11); the same defect is in the capacity data (A61): France publishes 2,801 MW identically on BE, DE_LU and IT_NORTH. Those are zone totals, not border figures, and using them would manufacture a result, so they are excluded: <strong>' +
           (nc.borders_kept ?? '—') + ' of ' + (nc.borders_raw ?? '—') + '</strong> NTC borders and <strong>' +
           (fc.pairs_validated ?? '—') + ' of ' + (fc.pairs_total ?? '—') +
-          '</strong> directed flow pairs are usable. Every correlation, convergence and spread figure above comes from the <strong>price panel</strong>, which has no such defect. <code>DK_1–DK_2</code> appears as a strongly coupled “non-adjacent” pair, but the Great Belt HVDC link physically connects them — it is simply absent from both the topology config and the ENTSO-E border data. That one is a topology-data gap, not a market finding.</div>',
-        [{ src: 'figures/rq3_topology.png', alt: 'Correlation decay by hop distance, and the borders that break the pattern' }],
+          '</strong> directed flow pairs are usable. Every correlation, convergence and spread figure above comes from the <strong>price panel</strong>, which has no such defect. <code>DK_1–DK_2</code> appears as a strongly coupled “non-adjacent” pair, but the Great Belt HVDC link physically connects them; it is simply absent from both the topology config and the ENTSO-E border data. That one is a topology-data gap, not a market finding.</div>',
         [
-          ['Co-movement', 'The same 2025 hourly price panel; correlations on raw levels (market integration) with deseasonalised residuals as a cross-check — both decay in the same shape.'],
+          { id: 'ov-rq3-hops', title: 'Correlation decays with every hop', height: 330 },
+          { id: 'ov-rq3-breaks', title: 'Where topology and price disagree', height: 330, note: '<span class="key key-green"></span>No direct border, strong coupling <span class="key key-red"></span>Direct border, weak coupling' },
+        ],
+        [
+          ['Co-movement', 'The same 2025 hourly price panel; correlations on raw levels (market integration) with deseasonalised residuals as a cross-check. Both decay in the same shape.'],
           ['Topology', 'The border list in <code>config/zones.yaml</code>, restricted to the ' + (panel.n_zones || 43) +
             ' zones in the panel → <strong>' + (rq3.n_adjacent_pairs ?? '—') + ' direct borders</strong>; hop distance by breadth-first search over that graph.'],
           ['Decay profile', 'All ' + (rq3.n_pairs ?? '—') + ' zone pairs grouped by hop distance (' +
@@ -1622,7 +1804,7 @@
             ((rq3.auc_p_value ?? 0).toExponential ? (rq3.auc_p_value).toExponential(0) : rq3.auc_p_value) + '.'],
           ['Mantel r ' + num((rq3.mantel || {}).r), ((rq3.mantel || {}).n_permutations || 0).toLocaleString() +
             ' permutations of the zone labels, comparing the price-distance matrix to the hop-distance matrix.'],
-          ['Convergence', 'Share of hours where two zones settle within 0.01 EUR/MWh — the standard sign that a border is <em>not</em> congested. Computed from prices, so it is available for every pair.'],
+          ['Convergence', 'Share of hours where two zones settle within 0.01 EUR/MWh, the standard sign that a border is <em>not</em> congested. Computed from prices, so it is available for every pair.'],
           ['Theory', 'Zonal prices are the duals of each zone&rsquo;s energy balance in the coupled auction. By complementary slackness the price gap across a border equals the shadow price of its capacity constraint, zero unless the line binds (Schweppe et al., 1988), so convergence share = share of uncongested hours and mean spread = average congestion price. Flow-based regions (Core) generalise this to network-element constraints weighted by PTDFs.'],
           ['Capacity', 'ENTSO-E net transfer capacity (document <strong>A61</strong>), de-duplicated as described above.'],
           ['Code', '<code>topology_comparison()</code> in <code>comovement.py</code>'],
@@ -1642,6 +1824,7 @@
   }
 
   renderAnswers();
+  renderAnswerCharts();
 
   if (G.renderGlossaryPanel && G.PANEL_TERMS) {
     const mapLayerZones = uniqueCodes(
@@ -2037,6 +2220,7 @@
     renderRq1();
     renderRq2();
     renderRq3();
+    renderAnswerCharts();
     const active = document.querySelector('.tab.active');
     if (active) renderTab(active.dataset.tab);
   });

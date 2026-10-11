@@ -210,7 +210,7 @@
         </thead>
         <tbody></tbody>
       </table></div>
-      <p class="subheading">Load seasonality (MW) — strongest quarterly patterns</p>
+      <p class="subheading">Load seasonality (MW): strongest quarterly patterns</p>
       <div class="table-wrap"><table id="load-season-table">
         <thead>
           <tr>
@@ -298,7 +298,7 @@
       <div class="panel-intro">
         <span class="eyebrow">Dependence</span>
         <h2>Directed price information flow</h2>
-        <p>Transfer entropy (TE) measures directed price information flow: does zone A’s past help predict zone B’s <em>next</em> hour beyond B’s own history? Estimated with <strong>k-NN Rényi TE</strong> (Tabachová et al. 2026) on deseasonalised ENTSO-E prices — see <strong>Data source &amp; method</strong> below for k, α, r, l, and shuffle correction.</p>
+        <p>Transfer entropy (TE) measures directed price information flow: does zone A’s past help predict zone B’s <em>next</em> hour beyond B’s own history? Estimated with <strong>k-NN Rényi TE</strong> (Tabachová et al. 2026) on deseasonalised ENTSO-E prices. See <strong>Data source &amp; method</strong> below for k, α, r, l, and shuffle correction.</p>
       </div>
       <div id="te-strength-explain" class="strength-explain-host"></div>
       <div class="stat-row" id="te-stats"></div>
@@ -393,7 +393,7 @@
           </div>
         </div>
         <div>
-          <p class="chart-label">Net TE (A minus B) — compare reversing pairs</p>
+          <p class="chart-label">Net TE (A minus B) across reversing pairs</p>
           <div class="chart-wrap chart-wrap-sm">
             <canvas id="te-net-line-chart"></canvas>
           </div>
@@ -412,7 +412,7 @@
         <tbody></tbody>
       </table></div>
       <p class="subheading">Nested TE vs yearly average</p>
-      <p class="hint">X-axis is the time scale, not geography. Each line is one corridor pair (A→B). Week/HOD averages are larger because windows are shorter — read the shape and whether the leader survives averaging.</p>
+      <p class="hint">X-axis is the time scale, not geography. Each line is one corridor pair (A→B). Week/HOD averages are larger because windows are shorter, so read the shape and whether the leader survives averaging.</p>
       <div class="chart-wrap">
         <canvas id="nested-te-chart"></canvas>
       </div>
@@ -441,8 +441,8 @@
     <section id="panel-rq1" class="panel" aria-labelledby="tab-rq1">
       <div class="panel-intro">
         <span class="eyebrow">Research question 1</span>
-        <h2>RQ1 — One Europe-wide mode, or many?</h2>
-        <p>How much of European price co-movement is a <strong>single Europe-wide mode</strong>, how much is <strong>cluster-specific</strong>, and how many cluster dimensions are statistically supported? We eigen-decompose the hourly zone correlation matrix and test each eigenvalue against <strong>phase-randomised surrogates</strong> — panels with each zone&rsquo;s own autocorrelation preserved but all cross-zone coupling destroyed.</p>
+        <h2>RQ1: One Europe-wide mode, or many?</h2>
+        <p>How much of European price co-movement is a <strong>single Europe-wide mode</strong>, how much is <strong>cluster-specific</strong>, and how many cluster dimensions are statistically supported? We eigen-decompose the hourly zone correlation matrix and test each eigenvalue against <strong>phase-randomised surrogates</strong>: panels with each zone&rsquo;s own autocorrelation preserved but all cross-zone coupling destroyed.</p>
       </div>
       <div id="rq1-answer" class="rq-answer"></div>
       <div class="stat-row" id="rq1-stats"></div>
@@ -473,7 +473,7 @@
     <section id="panel-rq2" class="panel" aria-labelledby="tab-rq2">
       <div class="panel-intro">
         <span class="eyebrow">Research question 2</span>
-        <h2>RQ2 — Do the clusters survive the calendar?</h2>
+        <h2>RQ2: Do the clusters survive the calendar?</h2>
         <p>Do the price clusters <strong>persist across seasons and intraday</strong>, or does the partition reorganise? Each stratum is clustered on its own correlation matrix (market mode removed) and scored against the full-year partition with the <strong>Adjusted Rand Index</strong>. The bar to clear is not ARI = 1: it is a <strong>permutation null of the same sample size</strong>, because a shorter window alone lowers ARI.</p>
       </div>
       <div id="rq2-answer" class="rq-answer"></div>
@@ -485,7 +485,7 @@
         </thead>
         <tbody></tbody>
       </table></div>
-      <p class="chart-label">Partition similarity by stratum — observed ARI against the 5th percentile of the matched null</p>
+      <p class="chart-label">Partition similarity by stratum: observed ARI against the 5th percentile of the matched null</p>
       <div class="chart-wrap">
         <canvas id="rq2-ari"></canvas>
       </div>
@@ -514,7 +514,7 @@
         </thead>
         <tbody></tbody>
       </table></div>
-      <p class="subheading">Sensitivity — does the answer depend on k?</p>
+      <p class="subheading">Sensitivity: does the answer depend on k?</p>
       <div class="table-wrap"><table id="rq2-k-table">
         <thead>
           <tr><th>k</th><th>Silhouette</th><th>Mean ARI</th><th>Min ARI</th></tr>
@@ -527,7 +527,7 @@
     <section id="panel-rq3" class="panel" aria-labelledby="tab-rq3">
       <div class="panel-intro">
         <span class="eyebrow">Research question 3</span>
-        <h2>RQ3 — Does price follow the wires?</h2>
+        <h2>RQ3: Does price follow the wires?</h2>
         <p>Does price co-movement follow the <strong>physical interconnection topology</strong>, and where does it diverge? We measure correlation against <strong>hop distance</strong> in the interconnection graph, test the whole distance matrix with a <strong>Mantel permutation test</strong>, and then name the borders that break the pattern in each direction.</p>
       </div>
       <div id="rq3-answer" class="rq-answer"></div>
@@ -537,7 +537,7 @@
         <canvas id="rq3-hops"></canvas>
       </div>
       <div class="explain-grid" id="rq3-explain"></div>
-      <p class="subheading">Directly connected, weakly coupled — the wire exists, the price does not follow</p>
+      <p class="subheading">Directly connected, weakly coupled: the wire exists, the price does not follow</p>
       <div class="table-wrap"><table id="rq3-under-table">
         <thead>
           <tr>
@@ -551,7 +551,7 @@
         </thead>
         <tbody></tbody>
       </table></div>
-      <p class="subheading">Not connected, tightly coupled — same bloc, no direct line needed</p>
+      <p class="subheading">Not connected, tightly coupled: same bloc, no direct line needed</p>
       <div class="table-wrap"><table id="rq3-over-table">
         <thead>
           <tr>
@@ -565,7 +565,7 @@
         </thead>
         <tbody></tbody>
       </table></div>
-      <p class="subheading">Congested corridors — direct border, prices almost never converge</p>
+      <p class="subheading">Congested corridors: direct border, prices almost never converge</p>
       <p class="muted">Ranked by mean price spread among borders converging in under 5% of hours. Flow and NTC appear only where ENTSO-E publishes a genuine per-border figure rather than the exporting zone&rsquo;s aggregate.</p>
       <div class="table-wrap"><table id="rq3-congested-table">
         <thead>
@@ -588,7 +588,7 @@
       <div class="panel-intro">
         <span class="eyebrow">Infrastructure</span>
         <h2>Dependency structure and the physical grid</h2>
-        <p>Compare which bidding zones are hubs on <strong>price coupling</strong>, <strong>physical flow</strong>, and <strong>transfer entropy</strong>, versus OSM transmission geography and GEM plant capacity. Overlap of top hubs shows where energy and price information concentrate on the same nodes — or not.</p>
+        <p>Compare which bidding zones are hubs on <strong>price coupling</strong>, <strong>physical flow</strong>, and <strong>transfer entropy</strong>, versus OSM transmission geography and GEM plant capacity. Overlap of top hubs shows where energy and price information concentrate on the same nodes, or do not.</p>
       </div>
       <div class="stat-row" id="network-stats"></div>
       <p id="hub-overlap" class="hint"></p>
@@ -634,7 +634,7 @@
       <div class="panel-intro">
         <span class="eyebrow">Data</span>
         <h2>ENTSO-E data availability</h2>
-        <p>We target 45 bidding zones from <code>config/zones.yaml</code>. This tab tracks <strong>ENTSO-E</strong> time-series gaps only. Static reference data (PyPSA-Eur OSM grid, GEM plants) is collected separately — see <strong>Data source &amp; method</strong> below.</p>
+        <p>We target 45 bidding zones from <code>config/zones.yaml</code>. This tab tracks <strong>ENTSO-E</strong> time-series gaps only. Static reference data (PyPSA-Eur OSM grid, GEM plants) is collected separately; see <strong>Data source &amp; method</strong> below.</p>
       </div>
       <div class="stat-row" id="coverage-stats"></div>
       <div class="table-wrap"><table id="gap-table">

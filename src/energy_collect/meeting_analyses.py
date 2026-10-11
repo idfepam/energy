@@ -750,13 +750,13 @@ def _build_interpretations(report: dict[str, Any]) -> dict[str, Any]:
         "Day-ahead Pearson r asks whether the two bidding zones cleared at similar prices every hour. "
         "Those coincide only when the interconnector (or the flow-based domain) is rarely binding. "
         "When the cable is full, power still flows at a high MW rate, but extra cheap generation cannot enter "
-        "the expensive zone — so prices decouple. That is congested trade, not a data error."
+        "the expensive zone, so prices decouple. That is congested trade, not a data error."
     )
     why_fr_es = (
         f"France–Spain in 2025: about {_fmt_mw(fr_es)} MW mean |flow| but Pearson r = {_fmt_r(fr_es)} "
         f"(below the 0.85 coupling threshold used for the price graph). The Pyrenees link is a known NTC "
         "bottleneck (ACER still flags FR–ES). Contrast Spain–Portugal on the same Iberian market: "
-        f"{_fmt_mw(es_pt)} MW and r = {_fmt_r(es_pt)} — aligned strong. So high flow is not enough for "
+        f"{_fmt_mw(es_pt)} MW and r = {_fmt_r(es_pt)}: aligned strong. So high flow is not enough for "
         "price integration; the market has to still have spare capacity in the needed direction. "
         "Caveat: ENTSO-E A11 often repeats the same French export total on several FR borders, so FR MW "
         "magnitudes should be read as ‘large’, not as independent meters."
@@ -769,7 +769,7 @@ def _build_interpretations(report: dict[str, Any]) -> dict[str, Any]:
         "integration statistic; MW is a path statistic."
     )
     why_aligned = (
-        f"{al} borders are aligned strong — both a large physical corridor and r ≥ 0.85 "
+        f"{al} borders are aligned strong: both a large physical corridor and r ≥ 0.85 "
         f"(examples: ES–PT r = {_fmt_r(es_pt)}; BE–NL r = {_fmt_r(be_nl)}). These are the cases where "
         "the commercial market and the wires are telling the same story."
     )
@@ -783,7 +783,7 @@ def _build_interpretations(report: dict[str, Any]) -> dict[str, Any]:
         f"Season is the cleanest reversal signal ({len(season_revs)} pairs, including {season_names}). "
         "South-east Europe often switches with winter heating versus autumn hydro/thermal mixes "
         "(e.g. Bulgaria leading Serbia in DJF/MAM, Serbia leading in SON). Weekday vs weekend showed "
-        "no leader flips at the 0.03-bit cutoff — the workweek changes level more than direction."
+        "no leader flips at the 0.03-bit cutoff; the workweek changes level more than direction."
     )
     why_nested = (
         f"On the corridor set {', '.join(nested.get('zones', []))}, "

@@ -26,11 +26,11 @@ DATASET_LABELS = {
 }
 
 DATASET_DOCS = {
-    "day_ahead_prices": "ENTSO-E A44 (12.1.D) — day-ahead price, EUR/MWh",
-    "actual_load": "ENTSO-E A65 (6.1.A) — total consumption, MW",
-    "generation_actual": "ENTSO-E A75 (16.1.B&C) — generation by fuel, MW",
-    "imbalance_prices": "ENTSO-E A85 (17.1.G) — balancing price, EUR/MWh",
-    "crossborder_flows": "ENTSO-E A11 (12.1.G) — physical border flow, MW",
+    "day_ahead_prices": "ENTSO-E A44 (12.1.D): day-ahead price, EUR/MWh",
+    "actual_load": "ENTSO-E A65 (6.1.A): total consumption, MW",
+    "generation_actual": "ENTSO-E A75 (16.1.B&C): generation by fuel, MW",
+    "imbalance_prices": "ENTSO-E A85 (17.1.G): balancing price, EUR/MWh",
+    "crossborder_flows": "ENTSO-E A11 (12.1.G): physical border flow, MW",
 }
 
 

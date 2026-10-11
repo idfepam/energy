@@ -22,15 +22,15 @@
     '<summary>Non-ENTSO-E reference layers (geography &amp; context)</summary>' +
     '<div class="te-params-body">' +
     '<ul class="te-params-list">' +
-    '<li><strong>PyPSA-Eur / OpenStreetMap</strong> — European transmission grid from Zenodo (ODbL). ' +
+    '<li><strong>PyPSA-Eur / OpenStreetMap</strong>: European transmission grid from Zenodo (ODbL). ' +
     'Substation coordinates → zone/country centroids on the map; ~9k line geometries in the static merge. ' +
     '<code>static-osm</code> → <code>data/raw/static/osm_grid/</code>.</li>' +
-    '<li><strong>GEM (Global Energy Monitor)</strong> — Global Integrated Power Tracker (GIPT): plant capacity by country, ' +
-    'attached to graph nodes after <code>merge-static</code> (reference only — not used in edge weights). ' +
+    '<li><strong>GEM (Global Energy Monitor)</strong>: Global Integrated Power Tracker (GIPT): plant capacity by country, ' +
+    'attached to graph nodes after <code>merge-static</code> (reference only, not used in edge weights). ' +
     '<code>data/raw/static/gem/</code>.</li>' +
-    '<li><strong>config/zones.yaml</strong> — Project zone list (45 bidding zones), EIC codes, and border neighbours. ' +
+    '<li><strong>config/zones.yaml</strong>: project zone list (45 bidding zones), EIC codes, and border neighbours. ' +
     'Defines TE border pairs and structural edges; not from an API.</li>' +
-    '<li><strong>Map basemap</strong> — CARTO Positron tiles (OpenStreetMap-derived background).</li>' +
+    '<li><strong>Map basemap</strong>: CARTO tiles, Positron in the light theme and Dark Matter in the dark theme (OpenStreetMap-derived).</li>' +
     '</ul>' +
     '<p class="te-params-note"><em>Dynamic</em> edges (flow, price r, TE) come from ENTSO-E time series. ' +
     'Static layers provide coordinates and geographic context only.</p>' +
@@ -40,7 +40,7 @@
     flow: {
       title: 'Physical flow layer',
       source:
-        '<strong>ENTSO-E Transparency Platform</strong>, document <strong>A11</strong> (12.1.G) — ' +
+        '<strong>ENTSO-E Transparency Platform</strong>, document <strong>A11</strong> (12.1.G): ' +
         'physical cross-border power flow, MW, hourly.',
       how:
         'Collected per zone × month via API (<code>collect --year</code>). Validated in ' +
@@ -56,7 +56,7 @@
     price: {
       title: 'Price coupling layer',
       source:
-        '<strong>ENTSO-E A44</strong> (12.1.D) — day-ahead market clearing price, EUR/MWh, hourly.',
+        '<strong>ENTSO-E A44</strong> (12.1.D): day-ahead market clearing price, EUR/MWh, hourly.',
       how:
         'Hourly prices pivoted by zone; <strong>Pearson r</strong> computed on all pairs with ≥30 days overlap. ' +
         'Graph threshold |r| ≥ 0.85; map “Strongest” uses |r| ≥ 0.80. Undirected edges (↔). ' +
@@ -91,7 +91,7 @@
     prices: {
       title: 'Day-ahead prices',
       source:
-        '<strong>ENTSO-E Transparency Platform</strong> — document <strong>A44</strong> (12.1.D), ' +
+        '<strong>ENTSO-E Transparency Platform</strong>, document <strong>A44</strong> (12.1.D), ' +
         'day-ahead price in <strong>EUR/MWh</strong>, hourly UTC timestamps.',
       how:
         'API collection (<code>collect --year {year}</code>) stores rows in SQLite manifest then ' +
@@ -156,7 +156,7 @@
       source:
         '<strong>ENTSO-E A11</strong> physical flows and <strong>A44</strong> day-ahead prices. TE from the k-NN graph when present.',
       how:
-        'Each neighbouring border: mean |MW|, Pearson r, max directed TE. Classes use median flow as the high-flow cut, |r| ≥ 0.85 (same as the price graph), TE ≥ 0.02. Duplicate-export A11 rows are still aggregated as mean |MW| — interpret directions with flow validation in mind.',
+        'Each neighbouring border: mean |MW|, Pearson r, max directed TE. Classes use median flow as the high-flow cut, |r| ≥ 0.85 (same as the price graph), TE ≥ 0.02. Duplicate-export A11 rows are still aggregated as mean |MW|, so interpret directions with flow validation in mind.',
       files: [
         'data/processed/entsoe/flows_{year}.parquet',
         'data/processed/entsoe/prices_{year}.parquet',
@@ -191,7 +191,7 @@
     coverage: {
       title: 'Data coverage audit',
       source:
-        '<strong>ENTSO-E Transparency Platform API</strong> — dynamic time series in the gap table ' +
+        '<strong>ENTSO-E Transparency Platform API</strong>: dynamic time series in the gap table ' +
         '(A44 prices, A65 load, A75 generation, A85 imbalance, A11 flows).',
       how:
         'After collection, zones missing any month in {year} are flagged in ' +
@@ -321,7 +321,7 @@
       });
 
     const combined = {
-      title: 'Map — ' + layerLabel,
+      title: 'Map: ' + layerLabel,
       intro:
         'Edge lines = ENTSO-E-derived metrics below. Zone dot positions from <strong>PyPSA-Eur OSM</strong> substation centroids ' +
         '(<code>zone_geo.parquet</code>). Basemap: CARTO / OpenStreetMap.',
