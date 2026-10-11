@@ -49,8 +49,10 @@ PROFILES: dict[str, str] = {
     "hod": "hour of day (UTC)",
     "dow": "day of week",
     "month": "month",
+    "quarter": "quarter",
 }
 DOW_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+QUARTER_LABELS = ["Q1", "Q2", "Q3", "Q4"]
 MONTH_LABELS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
 
@@ -67,7 +69,7 @@ def calendar_profile(panel: pd.DataFrame, by: str, *, relative: bool = True) -> 
     """
     data = panel / panel.mean() if relative else panel
     idx = data.index
-    keys = {"hod": idx.hour, "dow": idx.dayofweek, "month": idx.month - 1}
+    keys = {"hod": idx.hour, "dow": idx.dayofweek, "month": idx.month - 1, "quarter": idx.quarter - 1}
     if by not in keys:
         raise ValueError(f"unknown profile {by!r}; expected one of {sorted(keys)}")
     return data.groupby(keys[by]).mean()
@@ -183,7 +185,7 @@ def run_price_shape(config: AppConfig, year: int) -> dict[str, Any]:
         reference[key] = rel.mean(axis=1)
         profiles[key] = {
             "label": PROFILES[key],
-            "groups": {"hod": list(range(24)), "dow": DOW_LABELS, "month": MONTH_LABELS}[key],
+            "groups": {"hod": list(range(24)), "dow": DOW_LABELS, "month": MONTH_LABELS, "quarter": QUARTER_LABELS}[key],
             "relative": {z: rel[z].round(4).tolist() for z in zones},
             "absolute": {z: absolute[z].round(2).tolist() for z in zones},
             "europe_relative": reference[key].round(4).tolist(),

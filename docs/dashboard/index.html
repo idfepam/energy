@@ -155,8 +155,28 @@
         <h2>Seasonal patterns in electricity prices</h2>
         <p>Prices repeat at three time scales: <strong>within-day</strong> (morning/evening peaks), <strong>within-week</strong> (weekday vs weekend), and <strong>within-year</strong> (winter vs summer / quarterly levels). We remove these mean profiles step-by-step; the residual series is what we use for transfer entropy.</p>
       </div>
-      <label class="control-label" for="hod-zone-select">Zone</label>
-      <select id="hod-zone-select"></select>
+      <div class="zone-picker">
+        <span class="control-label">Zones on the charts</span>
+        <div class="chip-row" id="season-chips" aria-live="polite"></div>
+        <div class="map-controls picker-controls">
+          <div>
+            <label class="control-label" for="season-add">Add a zone</label>
+            <select id="season-add"></select>
+          </div>
+          <div>
+            <label class="control-label" for="season-bloc">Or a whole bloc</label>
+            <select id="season-bloc"></select>
+          </div>
+          <div>
+            <span class="control-label">Scale</span>
+            <div class="toggle-group" role="group" aria-label="Scale">
+              <button type="button" class="seg-btn active" data-season-scale="absolute">EUR/MWh</button>
+              <button type="button" class="seg-btn" data-season-scale="relative">Relative to mean</button>
+            </div>
+          </div>
+          <button type="button" class="btn-mini" id="season-clear">Clear all</button>
+        </div>
+      </div>
       <div class="chart-grid">
         <div>
           <p class="chart-label">Intraday (hour-of-day, UTC)</p>

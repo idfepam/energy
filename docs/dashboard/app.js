@@ -22,6 +22,8 @@
     blue: '#3b82f6', cyan: '#22d3ee', teal: '#14b8a6', green: '#10b981', violet: '#8b5cf6',
     rose: '#f43f5e', amber: '#f59e0b', orange: '#fb923c', slate: '#94a3b8',
   };
+  // Distinct series colours for multi-zone charts (readable on both themes).
+  const SERIES = ['#3b82f6', '#f43f5e', '#10b981', '#f59e0b', '#8b5cf6', '#22d3ee', '#ec4899', '#84cc16', '#fb923c', '#14b8a6', '#a78bfa', '#eab308'];
   const GRID = () => cssVar('--chart-grid');
   const MUTED = () => cssVar('--chart-muted');
   const MUTED_SOFT = () => cssVar('--chart-muted-soft');
@@ -380,164 +382,135 @@
     priceBody.innerHTML = '<tr><td colspan="5" class="muted">No price summary available</td></tr>';
   }
 
-  // --- Seasonality ---
-  const hodProfiles = D.seasonality?.hourly_profiles || {};
-  const hodZones = Object.keys(hodProfiles).sort();
-  const hodSelect = document.getElementById('hod-zone-select');
-  hodZones.forEach((z) => {
-    const opt = document.createElement('option');
-    opt.value = z;
-    opt.textContent = zChartLabel(z);
-    hodSelect.appendChild(opt);
+  // --- Seasonality: any number of zones on one set of charts ---
+  // Profiles come from the price-shape bundle, which covers every zone.
+  const SP = D.price_shape || {};
+  const seasonProfiles = SP.profiles || {};
+  const seasonZones = SP.zones || [];
+  const seasonBlocs = ((D.comovement || {}).rq2 || {}).clusters || [];
+  const SEASON_MAX = SERIES.length;
+  const seasonDefaults = Object.keys(D.seasonality?.hourly_profiles || {}).filter((z) => seasonZones.includes(z));
+  const seasonState = {
+    zones: seasonDefaults.length ? seasonDefaults : ['DE_LU', 'FR', 'ES', 'IT_NORTH', 'NO_4'].filter((z) => seasonZones.includes(z)),
+    scale: 'absolute',
+  };
+  const seasonColor = (z) => SERIES[seasonState.zones.indexOf(z) % SERIES.length];
+
+  const chipHost = document.getElementById('season-chips');
+  const addSelect = document.getElementById('season-add');
+  const blocSelect = document.getElementById('season-bloc');
+
+  function syncSeasonControls() {
+    if (chipHost) {
+      chipHost.innerHTML = seasonState.zones.length
+        ? seasonState.zones
+            .map((z) =>
+              '<button type="button" class="zone-chip-btn" data-zone="' + z + '" style="--chip:' + seasonColor(z) + '" title="Remove ' + esc(zLabel(z)) + '">' +
+              '<i aria-hidden="true"></i>' + z + '<span aria-hidden="true">×</span></button>'
+            )
+            .join('')
+        : '<span class="muted">No zones selected. Add some below.</span>';
+    }
+    if (addSelect) {
+      const full = seasonState.zones.length >= SEASON_MAX;
+      addSelect.innerHTML =
+        '<option value="">' + (full ? 'Limit of ' + SEASON_MAX + ' zones reached' : 'Choose a zone…') + '</option>' +
+        seasonBlocs
+          .map((c) => {
+            const opts = c.members.filter((z) => seasonZones.includes(z) && !seasonState.zones.includes(z));
+            return opts.length
+              ? '<optgroup label="' + esc(c.name) + '">' + opts.map((z) => '<option value="' + z + '">' + esc(zChartLabel(z)) + '</option>').join('') + '</optgroup>'
+              : '';
+          })
+          .join('');
+      addSelect.disabled = full;
+    }
+    if (blocSelect) {
+      blocSelect.innerHTML =
+        '<option value="">Choose a bloc…</option>' +
+        seasonBlocs.map((c, i) => '<option value="' + i + '">' + esc(c.name) + ' (' + c.members.length + ')</option>').join('');
+    }
+  }
+
+  function setSeasonZones(zones) {
+    seasonState.zones = [...new Set(zones)].filter((z) => seasonZones.includes(z)).slice(0, SEASON_MAX);
+    syncSeasonControls();
+    if (document.getElementById('panel-seasonality').classList.contains('active')) renderSeasonalityCharts();
+  }
+  if (chipHost) {
+    chipHost.addEventListener('click', (ev) => {
+      const chip = ev.target.closest('.zone-chip-btn');
+      if (chip) setSeasonZones(seasonState.zones.filter((z) => z !== chip.dataset.zone));
+    });
+  }
+  if (addSelect) addSelect.addEventListener('change', () => addSelect.value && setSeasonZones(seasonState.zones.concat(addSelect.value)));
+  if (blocSelect) {
+    blocSelect.addEventListener('change', () => {
+      const bloc = seasonBlocs[Number(blocSelect.value)];
+      if (bloc) setSeasonZones(seasonState.zones.concat(bloc.members));
+    });
+  }
+  const clearBtn = document.getElementById('season-clear');
+  if (clearBtn) clearBtn.addEventListener('click', () => setSeasonZones([]));
+  const scaleButtons = document.querySelectorAll('.seg-btn[data-season-scale]');
+  scaleButtons.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      scaleButtons.forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+      seasonState.scale = btn.dataset.seasonScale;
+      renderSeasonalityCharts();
+    });
   });
-  if (!hodZones.length) {
-    hodSelect.innerHTML = '<option>No profile data</option>';
+  syncSeasonControls();
+
+  function seasonDatasets(key, line) {
+    const prof = seasonProfiles[key];
+    if (!prof) return [];
+    const values = seasonState.scale === 'relative' ? prof.relative : prof.absolute;
+    return seasonState.zones.map((z) => {
+      const color = seasonColor(z);
+      return line
+        ? { label: z, data: values[z], borderColor: color, backgroundColor: color, tension: 0.35, pointRadius: 0, pointHoverRadius: 4 }
+        : { label: z, data: values[z], backgroundColor: alpha(color, 0.85), borderColor: color, borderWidth: 0 };
+    });
+  }
+
+  function upsertSeasonChart(key, canvasId, profileKey, type, labels, title) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas || !seasonProfiles[profileKey]) return;
+    const rel = seasonState.scale === 'relative';
+    if (charts[key]) charts[key].destroy();
+    charts[key] = new Chart(canvas, {
+      type,
+      data: { labels, datasets: seasonDatasets(profileKey, type === 'line') },
+      options: {
+        ...chartDefaults,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          ...chartDefaults.plugins,
+          title: { display: true, text: title, font: { size: 12, weight: '600' }, padding: { bottom: 10 } },
+          tooltip: {
+            mode: 'index',
+            intersect: false,
+            callbacks: { label: (c) => ' ' + c.dataset.label + ': ' + (rel ? c.parsed.y.toFixed(2) + '× mean' : c.parsed.y.toFixed(1) + ' EUR/MWh') },
+          },
+        },
+        scales: {
+          x: { grid: { display: false }, ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 12, font: { size: 11 } } },
+          y: { title: { display: true, text: rel ? 'Price / zone annual mean' : 'EUR/MWh', font: { size: 11 } }, grid: { color: GRID() } },
+        },
+      },
+    });
   }
 
   function renderSeasonalityCharts() {
-    renderHodChart();
-    renderQuarterChart();
-    renderMonthSeasonChart();
+    const n = seasonState.zones.length;
+    const who = n === 1 ? zChartLabel(seasonState.zones[0]) : n + ' zones';
+    const hours = [...Array(24).keys()].map((h) => String(h).padStart(2, '0') + ':00');
+    upsertSeasonChart('hod', 'hod-chart', 'hod', 'line', hours, 'Average price by hour of day — ' + who);
+    upsertSeasonChart('quarter', 'quarter-chart', 'quarter', 'bar', (seasonProfiles.quarter || {}).groups || [], 'Quarterly average — ' + who);
+    upsertSeasonChart('monthSeason', 'month-season-chart', 'month', 'line', (seasonProfiles.month || {}).groups || MONTH_NAMES, 'Calendar-month average — ' + who);
   }
-
-  function renderQuarterChart() {
-    const canvas = document.getElementById('quarter-chart');
-    const zone = hodSelect.value;
-    const profiles = D.seasonality?.quarterly_profiles || {};
-    const labels = D.seasonality?.quarter_labels || ['Q1', 'Q2', 'Q3', 'Q4'];
-    const data = profiles[zone] || [];
-
-    if (charts.quarter) {
-      charts.quarter.data.datasets[0].data = data;
-      charts.quarter.data.datasets[0].label = zone;
-      charts.quarter.options.plugins.title.text = `Quarterly average — ${zChartLabel(zone)}`;
-      charts.quarter.update();
-      charts.quarter.resize();
-      return;
-    }
-
-    charts.quarter = new Chart(canvas, {
-      type: 'bar',
-      data: {
-        labels,
-        datasets: [{
-          label: zone,
-          data,
-          backgroundColor: alpha(PAL.blue, 0.7),
-          borderColor: PAL.blue,
-          borderWidth: 1,
-        }],
-      },
-      options: {
-        ...chartDefaults,
-        plugins: {
-          ...chartDefaults.plugins,
-          legend: { display: false },
-          title: {
-            display: true,
-            text: `Quarterly average — ${zChartLabel(zone)}`,
-            font: { size: 12, weight: '600' },
-          },
-        },
-      },
-    });
-  }
-
-  function renderMonthSeasonChart() {
-    const canvas = document.getElementById('month-season-chart');
-    const zone = hodSelect.value;
-    const profiles = D.seasonality?.monthly_profiles || {};
-    const labels = D.seasonality?.calendar_month_labels || MONTH_NAMES;
-    const data = profiles[zone] || [];
-
-    if (charts.monthSeason) {
-      charts.monthSeason.data.datasets[0].data = data;
-      charts.monthSeason.data.datasets[0].label = zone;
-      charts.monthSeason.options.plugins.title.text = `Calendar-month average — ${zChartLabel(zone)}`;
-      charts.monthSeason.update();
-      charts.monthSeason.resize();
-      return;
-    }
-
-    charts.monthSeason = new Chart(canvas, {
-      type: 'line',
-      data: {
-        labels,
-        datasets: [{
-          label: zone,
-          data,
-          borderColor: PAL.amber,
-          backgroundColor: alpha(PAL.amber, 0.14),
-          fill: true,
-          borderWidth: 2,
-          tension: 0.3,
-        }],
-      },
-      options: {
-        ...chartDefaults,
-        plugins: {
-          ...chartDefaults.plugins,
-          title: {
-            display: true,
-            text: `Calendar-month average — ${zChartLabel(zone)}`,
-            font: { size: 12, weight: '600' },
-          },
-        },
-      },
-    });
-  }
-
-  function renderHodChart() {
-    const canvas = document.getElementById('hod-chart');
-    const zone = hodSelect.value;
-    const profile = hodProfiles[zone] || [];
-    const labels = [...Array(24).keys()].map((h) => `${String(h).padStart(2, '0')}:00 UTC`);
-
-    if (charts.hod) {
-      charts.hod.data.labels = labels;
-      charts.hod.data.datasets[0].label = zone;
-      charts.hod.data.datasets[0].data = profile;
-      charts.hod.options.plugins.title.text = `Average price by hour of day — ${zChartLabel(zone)}`;
-      charts.hod.update();
-      charts.hod.resize();
-      return;
-    }
-
-    charts.hod = new Chart(canvas, {
-      type: 'line',
-      data: {
-        labels,
-        datasets: [{
-          label: zone,
-          data: profile,
-          borderColor: PAL.blue,
-          backgroundColor: alpha(PAL.blue, 0.14),
-          fill: true,
-          borderWidth: 2,
-          pointRadius: 2,
-          tension: 0.3,
-        }],
-      },
-      options: {
-        ...chartDefaults,
-        plugins: {
-          ...chartDefaults.plugins,
-          title: {
-            display: true,
-            text: `Average price by hour of day — ${zChartLabel(zone)}`,
-            font: { size: 13, weight: '600' },
-            padding: { bottom: 12 },
-          },
-        },
-      },
-    });
-  }
-
-  hodSelect.addEventListener('change', () => {
-    if (document.getElementById('panel-seasonality').classList.contains('active')) {
-      renderSeasonalityCharts();
-    }
-  });
 
   const hodBody = document.querySelector('#hod-table tbody');
   (D.seasonality?.top_hod_strength || []).forEach((r) => {
@@ -1739,7 +1712,6 @@
 
   // --- Price shape (after Cäsar, Neumann & Zwickl-Bernhard 2026) ---
   const PS = D.price_shape || {};
-  const SERIES = ['#3b82f6', '#f43f5e', '#10b981', '#f59e0b', '#8b5cf6', '#22d3ee', '#ec4899', '#84cc16', '#fb923c', '#14b8a6', '#a78bfa', '#eab308'];
   const shapeMetrics = Object.fromEntries((PS.metrics || []).map((r) => [r.zone, r]));
   const shapeZones = PS.zones || [];
   const blocs = (CM.rq2 || {}).clusters || [];

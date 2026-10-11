@@ -29,6 +29,13 @@ def test_relative_profile_is_level_free() -> None:
     np.testing.assert_allclose(prof.mean(), 1.0)
 
 
+def test_quarter_profile_has_four_groups() -> None:
+    idx = pd.date_range("2025-01-01", "2025-12-31 23:00", freq="h", tz="UTC")
+    panel = pd.DataFrame({"z": np.where(idx.quarter == 3, 2.0, 1.0)}, index=idx)
+    prof = calendar_profile(panel, "quarter", relative=False)
+    assert prof["z"].tolist() == [1.0, 1.0, 2.0, 1.0]
+
+
 def test_alignment_ignores_level_and_scale() -> None:
     base = np.sin(np.linspace(0, 2 * np.pi, 24))
     assert abs(alignment(5 + 3 * base, base) - 1.0) < 1e-12

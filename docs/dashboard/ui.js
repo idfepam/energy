@@ -200,16 +200,82 @@
     });
   }
 
-  // --- Hero network: the real price-coupling graph, drawn on a canvas ---
+  // --- Hero network: countries as nodes (with flags), real grid and price links as edges ---
   const hero = (function () {
     const canvas = document.getElementById('hero-net');
+    const heroEl = canvas && canvas.closest('.hero');
     const noop = { setActive() {}, refreshColors() {} };
-    if (!canvas || !canvas.getContext) return noop;
+    if (!canvas || !canvas.getContext || !heroEl) return noop;
     const ctx = canvas.getContext('2d');
     const layers = (D.map_layers || {}).layers || {};
-    const nodes = ((D.map_layers || {}).nodes || []).filter((n) => isFinite(n.lat) && isFinite(n.lon));
-    const edges = ((layers.price || {}).strongest || []).concat((layers.flow || {}).all || []);
-    if (!nodes.length || !edges.length) return noop;
+    const zoneNodes = ((D.map_layers || {}).nodes || []).filter((n) => isFinite(n.lat) && isFinite(n.lon));
+    const countryOf = Object.fromEntries(zoneNodes.map((n) => [n.id, n.country || n.id]));
+    const centroids = Object.fromEntries(((D.map || {}).countries || []).map((c) => [c.iso, c]));
+    const G = window.DASHBOARD_GLOSSARY || {};
+    const names = G.COUNTRY_NAMES || {};
+
+    // One node per country that has bidding zones; position = map centroid, else mean of its zones.
+    const byCountry = {};
+    zoneNodes.forEach((n) => {
+      const iso = countryOf[n.id];
+      (byCountry[iso] = byCountry[iso] || []).push(n);
+    });
+    const nodes = Object.keys(byCountry).map((iso) => {
+      const zs = byCountry[iso];
+      const c = centroids[iso];
+      return {
+        iso,
+        zones: zs.length,
+        lat: c ? c.lat : zs.reduce((t, z) => t + z.lat, 0) / zs.length,
+        lon: c ? c.lon : zs.reduce((t, z) => t + z.lon, 0) / zs.length,
+        degree: 0,
+      };
+    });
+    if (nodes.length < 2) return noop;
+
+    // Country pairs: physical flow links first, then strong price coupling. Keep every country's
+    // strongest link, then fill with the strongest remaining pairs up to a readable edge count.
+    const MAX_EDGES = 58;
+    const pairs = new Map();
+    function addPair(e, kind) {
+      const a = countryOf[e.from];
+      const b = countryOf[e.to];
+      if (!a || !b || a === b) return;
+      const key = [a, b].sort().join('|');
+      const w = Math.max(0.12, e.norm || 0) + (kind === 'flow' ? 0.15 : 0);
+      const prev = pairs.get(key);
+      if (!prev || w > prev.w) pairs.set(key, { a, b, w: Math.min(1, w), kind });
+    }
+    ((layers.flow || {}).all || []).forEach((e) => addPair(e, 'flow'));
+    ((layers.price || {}).strongest || []).forEach((e) => addPair(e, 'price'));
+    const ranked = [...pairs.values()].sort((x, y) => y.w - x.w);
+    const chosen = new Set();
+    nodes.forEach((n) => {
+      const best = ranked.find((p) => p.a === n.iso || p.b === n.iso);
+      if (best) chosen.add(best);
+    });
+    for (const p of ranked) {
+      if (chosen.size >= MAX_EDGES) break;
+      chosen.add(p);
+    }
+    const edges = [...chosen];
+    const nodeByIso = Object.fromEntries(nodes.map((n) => [n.iso, n]));
+    edges.forEach((e) => {
+      nodeByIso[e.a].degree += 1;
+      nodeByIso[e.b].degree += 1;
+    });
+
+    // Round flags (flag-icons, 1:1 SVG). Until one loads, its node is drawn as a plain dot.
+    const flags = {};
+    nodes.forEach((n) => {
+      const img = new Image();
+      img.decoding = 'async';
+      img.onload = () => {
+        flags[n.iso] = img;
+        if (!running) draw(performance.now());
+      };
+      img.src = 'https://cdn.jsdelivr.net/npm/flag-icons@7.2.3/flags/1x1/' + n.iso.toLowerCase() + '.svg';
+    });
 
     let colors = {};
     function refreshColors() {
@@ -219,6 +285,7 @@
         a: cssVar('--hero-edge-a'),
         b: cssVar('--hero-edge-b'),
         pulse: cssVar('--hero-pulse'),
+        ring: cssVar('--hero-ring'),
       };
       if (!running) draw(performance.now());
     }
@@ -232,7 +299,7 @@
 
     let W = 0;
     let H = 0;
-    let points = {};
+    let R = 9;
     let segs = [];
     function layout() {
       const rect = canvas.getBoundingClientRect();
@@ -245,76 +312,140 @@
       const wide = W > 820;
       // On narrow screens the text sits below the network: keep the drawing inside the
       // space the stylesheet reserves above it (the hero text's top padding).
-      const inner = canvas.parentElement.querySelector('.hero-inner');
+      const inner = heroEl.querySelector('.hero-inner');
       const reserved = inner ? parseFloat(getComputedStyle(inner).paddingTop) : H * 0.35;
       const box = wide
-        ? { x: W * 0.54, y: H * 0.07, w: W * 0.43, h: H * 0.86 }
-        : { x: W * 0.08, y: 18, w: W * 0.84, h: Math.max(80, reserved - 40) };
+        ? { x: W * 0.54, y: H * 0.08, w: W * 0.42, h: H * 0.84 }
+        : { x: W * 0.08, y: 20, w: W * 0.84, h: Math.max(80, reserved - 44) };
+      R = wide ? Math.max(8, Math.min(11, W / 120)) : Math.max(5, Math.min(7, W / 62));
       const sx = box.w / (bounds.x1 - bounds.x0);
       const sy = box.h / (bounds.y1 - bounds.y0);
-      const s = Math.min(sx, sy);
-      const ox = box.x + (box.w - (bounds.x1 - bounds.x0) * s) / 2;
-      const oy = box.y + (box.h - (bounds.y1 - bounds.y0) * s) / 2;
-      points = {};
+      const sc = Math.min(sx, sy);
+      const ox = box.x + (box.w - (bounds.x1 - bounds.x0) * sc) / 2;
+      const oy = box.y + (box.h - (bounds.y1 - bounds.y0) * sc) / 2;
       nodes.forEach((n) => {
-        points[n.id] = { x: ox + (px(n) - bounds.x0) * s, y: oy + (bounds.y1 - n.lat) * s };
+        n.x = ox + (px(n) - bounds.x0) * sc;
+        n.y = oy + (bounds.y1 - n.lat) * sc;
       });
-      segs = edges
-        .map((e) => {
-          const a = points[e.from];
-          const b = points[e.to];
-          if (!a || !b) return null;
-          return { a, b, w: Math.max(0.15, e.norm || 0), phase: Math.random(), speed: 0.05 + Math.random() * 0.09 };
-        })
-        .filter(Boolean);
+      segs = edges.map((e, i) => ({
+        a: nodeByIso[e.a],
+        b: nodeByIso[e.b],
+        w: e.w,
+        kind: e.kind,
+        phase: (i * 0.618) % 1,
+        speed: 0.06 + ((i * 37) % 10) / 100,
+      }));
     }
 
+    let hoverIso = null;
     function draw(now) {
       if (!W) return;
       const t = now / 1000;
       ctx.clearRect(0, 0, W, H);
       ctx.lineCap = 'round';
       segs.forEach((s) => {
+        const hot = hoverIso && (s.a.iso === hoverIso || s.b.iso === hoverIso);
         const g = ctx.createLinearGradient(s.a.x, s.a.y, s.b.x, s.b.y);
         g.addColorStop(0, colors.a);
         g.addColorStop(1, colors.b);
         ctx.strokeStyle = g;
-        ctx.globalAlpha = 0.12 + s.w * 0.4;
-        ctx.lineWidth = 0.6 + s.w * 1.4;
+        ctx.globalAlpha = hoverIso ? (hot ? 0.95 : 0.08) : 0.2 + s.w * 0.45;
+        ctx.lineWidth = (hot ? 1.6 : 0.8) + s.w * 1.6;
+        ctx.setLineDash(s.kind === 'price' ? [4, 5] : []);
         ctx.beginPath();
         ctx.moveTo(s.a.x, s.a.y);
         ctx.lineTo(s.b.x, s.b.y);
         ctx.stroke();
       });
+      ctx.setLineDash([]);
       if (!reduceMotion) {
         ctx.fillStyle = colors.pulse;
         segs.forEach((s) => {
-          if (s.w < 0.45) return;
+          if (s.kind !== 'flow' || (hoverIso && s.a.iso !== hoverIso && s.b.iso !== hoverIso)) return;
           const p = (s.phase + t * s.speed) % 1;
-          const x = s.a.x + (s.b.x - s.a.x) * p;
-          const y = s.a.y + (s.b.y - s.a.y) * p;
-          ctx.globalAlpha = Math.sin(p * Math.PI) * 0.9;
+          ctx.globalAlpha = Math.sin(p * Math.PI) * 0.95;
           ctx.beginPath();
-          ctx.arc(x, y, 1.6, 0, Math.PI * 2);
+          ctx.arc(s.a.x + (s.b.x - s.a.x) * p, s.a.y + (s.b.y - s.a.y) * p, 1.8, 0, Math.PI * 2);
           ctx.fill();
         });
       }
-      Object.keys(points).forEach((id, i) => {
-        const p = points[id];
-        const breathe = reduceMotion ? 0.5 : 0.5 + 0.5 * Math.sin(t * 1.4 + i * 0.7);
-        ctx.globalAlpha = 0.18 + breathe * 0.22;
+      nodes.forEach((n, i) => {
+        const breathe = reduceMotion ? 0.5 : 0.5 + 0.5 * Math.sin(t * 1.3 + i * 0.9);
+        const hot = n.iso === hoverIso;
+        const r = hot ? R * 1.35 : R;
+        ctx.globalAlpha = (hoverIso && !hot ? 0.08 : 0.16) + breathe * 0.18;
         ctx.fillStyle = colors.glow;
         ctx.beginPath();
-        ctx.arc(p.x, p.y, 5 + breathe * 3, 0, Math.PI * 2);
+        ctx.arc(n.x, n.y, r + 4 + breathe * 4 + Math.min(n.degree, 8) * 0.4, 0, Math.PI * 2);
         ctx.fill();
-        ctx.globalAlpha = 0.95;
-        ctx.fillStyle = colors.node;
+        ctx.globalAlpha = hoverIso && !hot ? 0.45 : 1;
+        const img = flags[n.iso];
+        if (img) {
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(n.x, n.y, r, 0, Math.PI * 2);
+          ctx.clip();
+          ctx.drawImage(img, n.x - r, n.y - r, 2 * r, 2 * r);
+          ctx.restore();
+        } else {
+          ctx.fillStyle = colors.node;
+          ctx.beginPath();
+          ctx.arc(n.x, n.y, r * 0.45, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.strokeStyle = hot ? colors.a : colors.ring;
+        ctx.lineWidth = hot ? 2 : 1.25;
         ctx.beginPath();
-        ctx.arc(p.x, p.y, 2.1, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.arc(n.x, n.y, r, 0, Math.PI * 2);
+        ctx.stroke();
       });
       ctx.globalAlpha = 1;
     }
+
+    // Hover: name the country and highlight its links.
+    const tip = document.createElement('div');
+    tip.className = 'hero-tip';
+    tip.hidden = true;
+    heroEl.appendChild(tip);
+    function onMove(ev) {
+      const rect = canvas.getBoundingClientRect();
+      const mx = ev.clientX - rect.left;
+      const my = ev.clientY - rect.top;
+      let best = null;
+      let bestD = (R + 7) * (R + 7);
+      nodes.forEach((n) => {
+        const d = (n.x - mx) ** 2 + (n.y - my) ** 2;
+        if (d < bestD) {
+          bestD = d;
+          best = n;
+        }
+      });
+      const iso = best ? best.iso : null;
+      if (iso !== hoverIso) {
+        hoverIso = iso;
+        if (!running) draw(performance.now());
+      }
+      if (!best) {
+        tip.hidden = true;
+        heroEl.style.cursor = '';
+        return;
+      }
+      heroEl.style.cursor = 'default';
+      tip.innerHTML =
+        '<strong>' + (names[best.iso] || best.iso) + '</strong><span>' +
+        best.zones + (best.zones === 1 ? ' bidding zone' : ' bidding zones') + ' · ' + best.degree +
+        (best.degree === 1 ? ' link' : ' links') + '</span>';
+      tip.hidden = false;
+      const hr = heroEl.getBoundingClientRect();
+      tip.style.left = best.x + (rect.left - hr.left) + 'px';
+      tip.style.top = best.y + (rect.top - hr.top) - R - 10 + 'px';
+    }
+    heroEl.addEventListener('mousemove', onMove);
+    heroEl.addEventListener('mouseleave', () => {
+      hoverIso = null;
+      tip.hidden = true;
+      if (!running) draw(performance.now());
+    });
 
     let running = false;
     let visible = true;
