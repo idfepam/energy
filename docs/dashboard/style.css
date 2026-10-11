@@ -676,7 +676,8 @@ select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px
   border: 1px solid var(--border-strong);
   background: var(--surface-2);
 }
-.map-toggle {
+.map-toggle,
+.seg-btn {
   padding: 0.48rem 0.95rem;
   border: 0;
   border-radius: 9px;
@@ -686,8 +687,10 @@ select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px
   cursor: pointer;
   transition: background 0.25s, color 0.25s, box-shadow 0.25s;
 }
-.map-toggle:hover { color: var(--text); }
-.map-toggle.active { background: var(--grad); color: #fff; box-shadow: 0 6px 18px -8px rgba(99, 102, 241, 0.8); }
+.map-toggle:hover,
+.seg-btn:hover { color: var(--text); }
+.map-toggle.active,
+.seg-btn.active { background: var(--grad); color: #fff; box-shadow: 0 6px 18px -8px rgba(99, 102, 241, 0.8); }
 
 /* ---------- Map ---------- */
 #leaflet-map {
@@ -783,6 +786,14 @@ tbody tr { transition: background 0.15s; }
 tbody tr:hover { background: var(--surface-hover); }
 tbody tr:last-child td { border-bottom: 0; }
 td { color: var(--text-2); }
+table.sortable th[data-key] { cursor: pointer; user-select: none; }
+#shape-table { font-size: 0.82rem; }
+#shape-table th, #shape-table td { padding: 0.55rem 0.6rem; }
+#shape-table td small { color: var(--text-3); font-size: 0.72rem; }
+table.sortable th[data-key]:hover { color: var(--text); }
+table.sortable th[aria-sort="ascending"]::after { content: ' ↑'; color: var(--accent); }
+table.sortable th[aria-sort="descending"]::after { content: ' ↓'; color: var(--accent); }
+th.num { text-align: right; }
 td.num { text-align: right; font-variant-numeric: tabular-nums; font-family: var(--font-mono); font-size: 0.82rem; color: var(--text); white-space: nowrap; }
 td.arrow { text-align: center; color: var(--accent); width: 2rem; }
 td.muted { color: var(--text-3); font-size: 0.82rem; }

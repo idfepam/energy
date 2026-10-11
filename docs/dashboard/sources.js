@@ -121,6 +121,20 @@
       ],
       cli: 'decompose-seasonality --year {year} --all',
     },
+    shape: {
+      title: 'Price shape across zones',
+      source:
+        '<strong>ENTSO-E A44</strong> day-ahead prices (15-min MTU averaged into hourly UTC) and <strong>A75</strong> generation by fuel for the solar and wind shares.',
+      how:
+        'Calendar profiles = mean of price / annual mean per hour of day, weekday and month. Alignment ρ = Pearson r with the all-zone mean profile; amplitude ratio = profile range / all-zone range. Tails: negative (&lt; 0), near-zero (0–1) and spike (&gt; 200 EUR/MWh) shares; daily spread = mean of daily max − min. Metrics after Cäsar, Neumann &amp; Zwickl-Bernhard (2026), adapted from model-vs-market to zone-vs-Europe. A75 misses much distributed solar in some zones, so solar shares are lower bounds.',
+      files: [
+        'data/processed/entsoe/prices_{year}.parquet',
+        'data/processed/entsoe/generation_{year}.parquet',
+        'data/manifests/dashboard/price_shape_{year}.json',
+      ],
+      cli: 'analyze-price-shape --year {year}',
+      reference: 'Cäsar, Neumann & Zwickl-Bernhard (2026), SSRN doi:10.2139/ssrn.6714235',
+    },
     te: {
       title: 'Transfer entropy',
       source:

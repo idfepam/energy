@@ -21,6 +21,7 @@ from energy_collect.transfer_entropy import run_transfer_entropy
 from energy_collect.dashboard import build_dashboard_bundle
 from energy_collect.meeting_analyses import DEFAULT_NESTED_ZONES, run_meeting_analyses
 from energy_collect.comovement import run_comovement
+from energy_collect.price_shape import run_price_shape
 
 app = typer.Typer(help="European energy data collection framework")
 logging.basicConfig(
@@ -371,6 +372,21 @@ def analyze_comovement_cmd(
     for rq in ("rq1", "rq2", "rq3"):
         typer.echo("")
         typer.echo(f"[{rq.upper()}] {report['findings'][rq]}")
+
+
+@app.command("analyze-price-shape")
+def analyze_price_shape_cmd(
+    year: int = typer.Option(2025, help="Year"),
+) -> None:
+    """Calendar profiles, negative/spike tails and shape alignment for every zone."""
+    load_dotenv()
+    config = load_config()
+    report = run_price_shape(config, year)
+    typer.echo(f"Dashboard JSON: {report['dashboard_path']}")
+    summary = report["summary"]
+    typer.echo(f"Panel: {summary['n_zones']} zones x {summary['hours']} hours")
+    for key, text in report["findings"].items():
+        typer.echo(f"[{key}] {text}")
 
 
 @app.command("build-dashboard")

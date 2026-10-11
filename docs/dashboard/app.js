@@ -6,7 +6,7 @@
     return;
   }
 
-  const charts = { price: null, hod: null, quarter: null, monthSeason: null, nestedTe: null, nestedHod: null, substations: null, gemType: null, mismatchScatter: null, tePair: null, teNet: null, rq1Spectrum: null, rq1Variance: null, rq2Ari: null, rq2Market: null, rq3Hops: null };
+  const charts = { price: null, hod: null, quarter: null, monthSeason: null, nestedTe: null, nestedHod: null, substations: null, gemType: null, mismatchScatter: null, tePair: null, teNet: null, rq1Spectrum: null, rq1Variance: null, rq2Ari: null, rq2Market: null, rq3Hops: null, shapeProfile: null, shapeNeg: null, shapeDuration: null, shapeAlign: null };
   const G = window.DASHBOARD_GLOSSARY || {};
   const S = window.DASHBOARD_SOURCES || {};
   const Z = D.zone_names || {};
@@ -123,6 +123,7 @@
     }
     if (tab === 'mismatch') renderMismatchScatter();
     if (tab === 'network') renderNetworkCharts();
+    if (tab === 'shape') renderShapeCharts();
   }
 
   // --- Map ---
@@ -1442,6 +1443,10 @@
           'Zones two or more hops apart inside one coupled bloc move together almost perfectly. Market coupling clears the whole region at once, so prices propagate across intermediate zones without any dedicated line.'
         ) +
         explainCard(
+          'Why identical prices mean an uncongested border',
+          'Market coupling clears all zones in one welfare-maximising auction, and each zone&rsquo;s price is the shadow price (dual) of its supply-equals-demand constraint. By complementary slackness, the price gap across an interconnector equals the shadow price of that line&rsquo;s capacity limit: <strong>zero while the line has spare capacity, positive only when it binds</strong> (Schweppe et al., 1988). So the share of hours with identical prices measures how often a border is <em>not</em> congested, and the mean spread is the average congestion price per MWh. In flow-based regions such as Core the binding limits sit on internal network elements, so a price gap reflects those constraints weighted by power-flow sensitivities rather than a single border.'
+        ) +
+        explainCard(
           'Capacity is only part of the story',
           'Across the ' + (ntc.n ?? '—') + ' borders with a genuine per-border NTC, log capacity correlates r = ' + num(ntc.r) + ' with price coupling — a real but moderate link. Bigger borders do couple more, yet what finally separates a coupled border from a congested one is how often the capacity binds and which market-coupling region the two zones sit in.'
         );
@@ -1645,6 +1650,7 @@
           ['Mantel r ' + num((rq3.mantel || {}).r), ((rq3.mantel || {}).n_permutations || 0).toLocaleString() +
             ' permutations of the zone labels, comparing the price-distance matrix to the hop-distance matrix.'],
           ['Convergence', 'Share of hours where two zones settle within 0.01 EUR/MWh — the standard sign that a border is <em>not</em> congested. Computed from prices, so it is available for every pair.'],
+          ['Theory', 'Zonal prices are the duals of each zone&rsquo;s energy balance in the coupled auction. By complementary slackness the price gap across a border equals the shadow price of its capacity constraint, zero unless the line binds (Schweppe et al., 1988), so convergence share = share of uncongested hours and mean spread = average congestion price. Flow-based regions (Core) generalise this to network-element constraints weighted by PTDFs.'],
           ['Capacity', 'ENTSO-E net transfer capacity (document <strong>A61</strong>), de-duplicated as described above.'],
           ['Code', '<code>topology_comparison()</code> in <code>comovement.py</code>'],
           ['Output', '<code>data/manifests/comovement_2025.json</code> → <code>rq3</code>'],
@@ -1692,6 +1698,7 @@
       (D.te_border_edges || D.te_edges || []).flatMap((e) => [e.from, e.to])
     );
     G.renderGlossaryPanel('glossary-te', G.PANEL_TERMS.te, teZones, Z);
+    G.renderGlossaryPanel('glossary-shape', G.PANEL_TERMS.shape || [], (D.price_shape || {}).zones || [], Z);
 
     const mmZones = uniqueCodes(
       (mm.borders || []).flatMap((r) => [r.a, r.b]).concat((nested.zones || []))
@@ -1729,6 +1736,313 @@
     G.renderGlossaryPanel('glossary-coverage', G.PANEL_TERMS.coverage, allZoneCodes, Z);
   }
 
+
+  // --- Price shape (after Cäsar, Neumann & Zwickl-Bernhard 2026) ---
+  const PS = D.price_shape || {};
+  const SERIES = ['#3b82f6', '#f43f5e', '#10b981', '#f59e0b', '#8b5cf6', '#22d3ee', '#ec4899', '#84cc16', '#fb923c', '#14b8a6', '#a78bfa', '#eab308'];
+  const shapeMetrics = Object.fromEntries((PS.metrics || []).map((r) => [r.zone, r]));
+  const shapeZones = PS.zones || [];
+  const blocs = (CM.rq2 || {}).clusters || [];
+  const blocOf = {};
+  blocs.forEach((c, i) => c.members.forEach((z) => { blocOf[z] = i; }));
+  const shapeState = { preset: 'representatives', profile: 'hod', scale: 'relative' };
+
+  function shapePresets() {
+    const presets = [];
+    const reps = ['DE_LU', 'FR', 'ES', 'IT_NORTH', 'NL', 'NO_4', 'FI', 'EE', 'GR'].filter((z) => shapeZones.includes(z));
+    presets.push({ key: 'representatives', label: 'One zone per bloc (overview)', zones: reps });
+    const byNeg = (PS.metrics || []).slice().sort((a, b) => b.negative_hours - a.negative_hours).slice(0, 8).map((r) => r.zone);
+    presets.push({ key: 'negative', label: 'Most negative hours (top 8)', zones: byNeg });
+    blocs.forEach((c, i) => presets.push({ key: 'bloc' + i, label: 'Bloc: ' + c.name, zones: c.members.filter((z) => shapeZones.includes(z)) }));
+    return presets;
+  }
+  const SHAPE_PRESETS = shapePresets();
+  const selectedShapeZones = () => (SHAPE_PRESETS.find((p) => p.key === shapeState.preset) || SHAPE_PRESETS[0] || { zones: [] }).zones;
+
+  const presetSelect = document.getElementById('shape-preset');
+  if (presetSelect) {
+    presetSelect.innerHTML = SHAPE_PRESETS.map((p) => '<option value="' + p.key + '">' + p.label + '</option>').join('');
+    presetSelect.addEventListener('change', () => {
+      shapeState.preset = presetSelect.value;
+      renderShapeProfile();
+      renderShapeDuration();
+    });
+  }
+  function bindSegment(attr, key, onChange) {
+    const buttons = document.querySelectorAll('.seg-btn[data-' + attr + ']');
+    buttons.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        buttons.forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+        shapeState[key] = btn.dataset[attr];
+        onChange();
+      });
+    });
+  }
+  bindSegment('profile', 'profile', () => renderShapeProfile());
+  bindSegment('scale', 'scale', () => renderShapeProfile());
+
+  function renderShapeProfile() {
+    const canvas = document.getElementById('shape-profile-chart');
+    const prof = (PS.profiles || {})[shapeState.profile];
+    if (!canvas || !prof) return;
+    const rel = shapeState.scale === 'relative';
+    const groups = prof.groups.map((g) => (shapeState.profile === 'hod' ? String(g).padStart(2, '0') + ':00' : g));
+    const zones = selectedShapeZones();
+    const datasets = zones.map((z, i) => ({
+      label: z,
+      data: (rel ? prof.relative : prof.absolute)[z],
+      borderColor: SERIES[i % SERIES.length],
+      backgroundColor: SERIES[i % SERIES.length],
+      tension: 0.35,
+      pointRadius: 0,
+      pointHoverRadius: 4,
+    }));
+    if (rel) {
+      datasets.push({
+        label: 'All-zone mean',
+        data: prof.europe_relative,
+        borderColor: cssVar('--text-3'),
+        backgroundColor: cssVar('--text-3'),
+        borderDash: [6, 5],
+        borderWidth: 1.75,
+        tension: 0.35,
+        pointRadius: 0,
+      });
+    }
+    if (charts.shapeProfile) charts.shapeProfile.destroy();
+    charts.shapeProfile = new Chart(canvas, {
+      type: 'line',
+      data: { labels: groups, datasets },
+      options: {
+        ...chartDefaults,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          ...chartDefaults.plugins,
+          tooltip: {
+            mode: 'index',
+            intersect: false,
+            callbacks: {
+              label: (c) => ' ' + c.dataset.label + ': ' + (rel ? c.parsed.y.toFixed(2) + '× mean' : c.parsed.y.toFixed(1) + ' EUR/MWh'),
+            },
+          },
+        },
+        scales: {
+          x: { grid: { display: false }, title: { display: true, text: prof.label }, ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 12 } },
+          y: {
+            title: { display: true, text: rel ? 'Price / zone annual mean' : 'EUR/MWh' },
+            grid: { color: GRID() },
+          },
+        },
+      },
+    });
+  }
+
+  function renderShapeNegative() {
+    const canvas = document.getElementById('shape-neg-chart');
+    const cum = PS.cumulative_negative || {};
+    if (!canvas || !cum.dates) return;
+    const finals = Object.entries(cum.series).map(([z, s]) => [z, s[s.length - 1]]).sort((a, b) => b[1] - a[1]);
+    const top = finals.slice(0, 8).map((f) => f[0]);
+    const muted = cssVar('--chart-muted');
+    const datasets = finals
+      .filter((f) => !top.includes(f[0]) && f[1] > 0)
+      .map(([z]) => ({ label: z, data: cum.series[z], borderColor: muted, borderWidth: 1, pointRadius: 0, inLegend: false, order: 2 }))
+      .concat(top.map((z, i) => ({
+        label: z + ' · ' + cum.series[z][cum.series[z].length - 1] + ' h',
+        data: cum.series[z],
+        borderColor: SERIES[i % SERIES.length],
+        backgroundColor: SERIES[i % SERIES.length],
+        borderWidth: 2.25,
+        pointRadius: 0,
+        inLegend: true,
+        order: 1,
+      })));
+    const labels = cum.dates;
+    if (charts.shapeNeg) charts.shapeNeg.destroy();
+    charts.shapeNeg = new Chart(canvas, {
+      type: 'line',
+      data: { labels, datasets },
+      options: {
+        ...chartDefaults,
+        interaction: { mode: 'nearest', intersect: false, axis: 'x' },
+        plugins: {
+          ...chartDefaults.plugins,
+          legend: { position: 'bottom', labels: { boxWidth: 10, padding: 10, font: { size: 10.5 }, filter: (item, data) => data.datasets[item.datasetIndex].inLegend } },
+          tooltip: { mode: 'nearest', intersect: false, callbacks: { title: (items) => items[0].label, label: (c) => ' ' + c.dataset.label.split(' · ')[0] + ': ' + c.parsed.y + ' h' } },
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: {
+              autoSkip: false,
+              maxRotation: 0,
+              callback: (v, i) => (labels[i] && labels[i].endsWith('-01') ? MONTH_NAMES[Number(labels[i].slice(5, 7)) - 1] : null),
+            },
+          },
+          y: { title: { display: true, text: 'Negative-price hours (cumulative)' }, grid: { color: GRID() }, beginAtZero: true },
+        },
+      },
+    });
+  }
+
+  function renderShapeDuration() {
+    const canvas = document.getElementById('shape-duration-chart');
+    const curves = PS.duration_curves || {};
+    if (!canvas || !Object.keys(curves).length) return;
+    const zones = selectedShapeZones().filter((z) => curves[z]);
+    const n = (curves[zones[0]] || []).length;
+    const labels = Array.from({ length: n }, (_, i) => Math.round((100 * i) / (n - 1)) + '%');
+    const top = Math.max(...zones.map((z) => curves[z][1]));
+    const bottom = Math.min(0, ...zones.map((z) => curves[z][n - 2]));
+    const datasets = zones.map((z, i) => ({
+      label: z,
+      data: curves[z],
+      borderColor: SERIES[i % SERIES.length],
+      backgroundColor: SERIES[i % SERIES.length],
+      pointRadius: 0,
+      tension: 0.2,
+    }));
+    if (charts.shapeDuration) charts.shapeDuration.destroy();
+    charts.shapeDuration = new Chart(canvas, {
+      type: 'line',
+      data: { labels, datasets },
+      options: {
+        ...chartDefaults,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          ...chartDefaults.plugins,
+          tooltip: { mode: 'index', intersect: false, callbacks: { title: (items) => 'Share of hours above: ' + items[0].label, label: (c) => ' ' + c.dataset.label + ': ' + c.parsed.y.toFixed(1) + ' EUR/MWh' } },
+        },
+        scales: {
+          x: { grid: { display: false }, title: { display: true, text: 'Share of the year (hours sorted from highest price)' }, ticks: { maxTicksLimit: 6, maxRotation: 0 } },
+          y: { title: { display: true, text: 'EUR/MWh' }, grid: { color: GRID() }, max: Math.ceil(top / 50) * 50, min: Math.floor(bottom / 25) * 25 },
+        },
+      },
+    });
+  }
+
+  function renderShapeAlignment() {
+    const canvas = document.getElementById('shape-align-chart');
+    if (!canvas || !PS.metrics) return;
+    const groups = blocs.map((c, i) => ({ name: c.name, color: SERIES[i % SERIES.length], points: [] }));
+    const other = { name: 'Other', color: PAL.slate, points: [] };
+    PS.metrics.forEach((r) => {
+      if (r.rho_hod == null || r.amp_hod == null) return;
+      const g = blocOf[r.zone] != null ? groups[blocOf[r.zone]] : other;
+      g.points.push({ x: r.rho_hod, y: r.amp_hod, zone: r.zone });
+    });
+    const datasets = groups.concat(other.points.length ? [other] : []).map((g) => ({
+      label: g.name,
+      data: g.points,
+      backgroundColor: alpha(g.color, 0.85),
+      borderColor: g.color,
+      pointRadius: 6,
+      pointHoverRadius: 9,
+    }));
+    if (charts.shapeAlign) charts.shapeAlign.destroy();
+    charts.shapeAlign = new Chart(canvas, {
+      type: 'scatter',
+      data: { datasets },
+      options: {
+        ...chartDefaults,
+        plugins: {
+          ...chartDefaults.plugins,
+          tooltip: { callbacks: { label: (c) => ' ' + c.raw.zone + ' (' + c.dataset.label + '): ρ ' + c.raw.x.toFixed(2) + ', amplitude ' + c.raw.y.toFixed(2) + '×' } },
+        },
+        scales: {
+          x: { title: { display: true, text: 'Alignment ρ with the all-zone daily profile' }, grid: { color: GRID() }, max: 1 },
+          y: { title: { display: true, text: 'Amplitude ratio (zone range / all-zone range)' }, grid: { color: GRID() } },
+        },
+      },
+    });
+  }
+
+  function renderShapeCharts() {
+    renderShapeProfile();
+    renderShapeNegative();
+    renderShapeDuration();
+    renderShapeAlignment();
+  }
+
+  // Static parts of the panel: headline numbers, findings and the sortable table.
+  (function renderShapeStatic() {
+    const sum = PS.summary || {};
+    const stats = document.getElementById('shape-stats');
+    if (stats && sum.n_zones) {
+      stats.innerHTML =
+        statCard(sum.zones_with_negative + ' / ' + sum.n_zones, 'Zones with negative prices in ' + (PS.year || D.year)) +
+        statCard(String((sum.most_negative || {}).hours ?? '—'), 'Negative hours in ' + ((sum.most_negative || {}).zone || '—') + ', the most of any zone') +
+        statCard(String((sum.zones_floor_at_zero || []).length), 'Zones that never clear below 0 EUR/MWh') +
+        statCard(num(sum.hod_shape_similarity_mean), 'Mean similarity of daily shapes (r)');
+    }
+    const findings = PS.findings || {};
+    const fEl = document.getElementById('shape-findings');
+    if (fEl) {
+      fEl.innerHTML =
+        explainCard('Negative prices follow market rules too', esc(findings.negatives)) +
+        explainCard('Not a simple solar story', esc(findings.solar)) +
+        explainCard('One European daily rhythm, with exceptions', esc(findings.shape)) +
+        explainCard(
+          'Why these metrics',
+          'Cäsar, Neumann &amp; Zwickl-Bernhard (2026) show that energy-system models get the price <em>level</em> right but compress its <em>shape</em>: too flat a day, no negative hours, no spikes. Their alignment and compression measures turn that into numbers. Applied across zones they show how differently the same European market behaves from place to place.'
+        );
+    }
+    const body = document.querySelector('#shape-table tbody');
+    if (!body || !PS.metrics) return;
+    const fmt = {
+      zone: (r) => '<span class="zone-code" title="' + esc(zLabel(r.zone)) + '">' + r.zone + '</span>',
+      mean: (r) => num(r.mean, 1),
+      negative_hours: (r) => r.negative_hours + ' <small>(' + pct(r.negative_share) + ')</small>',
+      near_zero_share: (r) => pct(r.near_zero_share),
+      spike_share: (r) => pct(r.spike_share),
+      peak: (r) => num(r.peak, 0),
+      lowest: (r) => num(r.lowest, 0),
+      daily_spread: (r) => num(r.daily_spread, 1),
+      rho_hod: (r) => num(r.rho_hod),
+      amp_hod: (r) => num(r.amp_hod) + '×',
+      solar_share: (r) => (r.solar_share == null ? '—' : num(r.solar_share, 1) + '%'),
+      wind_share: (r) => (r.wind_share == null ? '—' : num(r.wind_share, 1) + '%'),
+    };
+    const keys = Object.keys(fmt);
+    let sortKey = 'negative_hours';
+    let sortDir = -1;
+    function draw() {
+      const rows = PS.metrics.slice().sort((a, b) => {
+        const va = a[sortKey];
+        const vb = b[sortKey];
+        if (va == null) return 1;
+        if (vb == null) return -1;
+        return (va > vb ? 1 : va < vb ? -1 : 0) * sortDir;
+      });
+      body.innerHTML = rows
+        .map((r) => '<tr>' + keys.map((k) => '<td' + (k === 'zone' ? '' : ' class="num"') + '>' + fmt[k](r) + '</td>').join('') + '</tr>')
+        .join('');
+      document.querySelectorAll('#shape-table th[data-key]').forEach((th) => {
+        th.setAttribute('aria-sort', th.dataset.key === sortKey ? (sortDir > 0 ? 'ascending' : 'descending') : 'none');
+      });
+    }
+    document.querySelectorAll('#shape-table th[data-key]').forEach((th) => {
+      th.tabIndex = 0;
+      const activate = () => {
+        if (sortKey === th.dataset.key) sortDir = -sortDir;
+        else {
+          sortKey = th.dataset.key;
+          sortDir = sortKey === 'zone' ? 1 : -1;
+        }
+        draw();
+      };
+      th.addEventListener('click', activate);
+      th.addEventListener('keydown', (ev) => {
+        if (ev.key === 'Enter' || ev.key === ' ') {
+          ev.preventDefault();
+          activate();
+        }
+      });
+    });
+    draw();
+  })();
+
   // --- Theme switching: recolour the basemap, the map edges and every chart ---
   document.addEventListener('dashboard:themechange', () => {
     applyChartTheme();
@@ -1752,6 +2066,7 @@
     S.renderSourcesPanel('sources-prices', 'prices', D);
     S.renderSourcesPanel('sources-seasonality', 'seasonality', D);
     S.renderSourcesPanel('sources-te', 'te', D);
+    S.renderSourcesPanel('sources-shape', 'shape', D);
     S.renderSourcesPanel('sources-mismatch', 'mismatch', D);
     S.renderSourcesPanel('sources-regimes', 'regimes', D);
     S.renderSourcesPanel('sources-network', 'network', D);

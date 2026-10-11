@@ -107,6 +107,12 @@ def build_dashboard_bundle(config: AppConfig, year: int) -> dict[str, Any]:
         full = run_comovement(config, year)
         comovement = _load_json(Path(full["dashboard_path"]))
 
+    price_shape = _load_json(config.data_root / "manifests" / "dashboard" / f"price_shape_{year}.json")
+    if price_shape is None:
+        from energy_collect.price_shape import run_price_shape
+
+        price_shape = _load_json(Path(run_price_shape(config, year)["dashboard_path"]))
+
     graph = _load_json(config.data_root / "manifests" / f"dependency_graph_{year}.json")
     gaps = _load_json(config.data_root / "manifests" / "gaps_report.json")
     map_data = _load_json(config.data_root / "manifests" / "map_leaflet.json")
@@ -234,6 +240,7 @@ def build_dashboard_bundle(config: AppConfig, year: int) -> dict[str, Any]:
         "zone_names": _zone_names(config.zones),
         "meeting": meeting or {},
         "comovement": comovement or {},
+        "price_shape": price_shape or {},
     }
 
     dash_dir = Path(__file__).resolve().parents[2] / "docs" / "dashboard"

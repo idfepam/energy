@@ -132,10 +132,22 @@
       ['NTC', 'Net Transfer Capacity — the megawatts a border may nominally carry (ENTSO-E document A61).'],
       ['Congested border', 'Capacity binds, so the two sides clear at different prices. High flow with near-zero convergence.'],
       ['Market coupling', 'The algorithm that clears several bidding zones together, which is why prices can track across zones with no direct line.'],
+      ['Congestion shadow price', 'The dual of an interconnector&rsquo;s capacity limit in the coupled auction. It equals the price gap across the border: zero while the line has spare capacity, positive once it binds.'],
     ],
   };
 
   const PANEL_TERMS = {
+    shape: [
+      ['Relative profile', 'Mean price per hour of day, weekday or month divided by the zone&rsquo;s annual mean. 1.4 = 40% above that zone&rsquo;s average, so zones at very different levels can be compared.'],
+      ['Alignment ρ', 'Pearson correlation between a zone&rsquo;s profile and the all-zone mean profile. 1 = peaks and troughs in the same hours; it ignores level and amplitude.'],
+      ['Amplitude ratio', 'Range of the zone&rsquo;s profile divided by the range of the all-zone profile. Below 1 = flatter than Europe, above 1 = sharper. The inverse of the compression factor ξ in Cäsar et al. (2026).'],
+      ['Negative hour', 'An hour that clears below 0 EUR/MWh: producers pay to keep running, typically when inflexible or subsidised output exceeds demand and export capacity.'],
+      ['Near-zero hour', 'An hour that clears between 0 and 1 EUR/MWh, usually when zero-marginal-cost generation sets the price.'],
+      ['Spike', 'An hour above 200 EUR/MWh, typically scarcity with expensive peaking plants at the margin.'],
+      ['Daily spread', 'Average over the year of each day&rsquo;s highest minus lowest hourly price. A direct measure of the value of shifting energy within a day.'],
+      ['Price duration curve', 'All hours of the year sorted from the highest to the lowest price. Its tails show how often extremes occur.'],
+      ['Price floor at 0', 'Zones whose lowest 2025 price is exactly 0 EUR/MWh. Their market rules or bidding never produced a negative clearing price, so their negative-hour count is zero by construction.'],
+    ],
     rq1: RQ_TERMS.rq1,
     rq2: RQ_TERMS.rq2,
     rq3: RQ_TERMS.rq3,
