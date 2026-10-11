@@ -6,8 +6,6 @@ Collection framework for ENTSO-E transparency data and upstream static infrastru
 
 The GitHub **repository** page shows this README. The **Pages site** is the interactive dashboard (map, prices, TE, mismatch, network).
 
-**Supervisor:** Stefan
-
 ## Setup
 
 ```bash
@@ -107,7 +105,6 @@ python3 scripts/build_rq_figures.py --year 2025
 - **[RQ1–RQ3 findings](docs/research_questions.md)** — full method, tables and caveats
 - **[Data dictionary](docs/data_dictionary.md)** — all zone codes, field names, PSR fuel types, units
 - **[ENTSO-E data guide](docs/entsoe_data_guide.md)** — collection strategy and analysis notes
-- **[Status for Stefan](docs/status_for_stefan.md)** — project progress summary
 
 Build geographic reference tables (zone → country → lat/lon):
 
